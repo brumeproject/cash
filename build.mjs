@@ -82,16 +82,4 @@ fs.writeFileSync(`./out/service_worker.js`, replaced, "utf8")
 fs.writeFileSync(`./out/service_worker.latest.js`, replaced, "utf8")
 fs.writeFileSync(`./out/service_worker.${version}.js`, replaced, "utf8")
 
-fs.rmSync("./src/pages", { recursive: true, force: true })
-
-fs.mkdirSync("./out", { recursive: true })
-fs.mkdirSync("./public", { recursive: true })
-
-fs.cpSync("./out", "./public", { recursive: true, force: true })
-
-fs.rmSync("./public/_next", { recursive: true, force: true })
-
-fs.mkdirSync("./tmp/src/pages/api", { recursive: true })
-fs.mkdirSync("./src/pages/api", { recursive: true })
-
-fs.cpSync("./tmp/src/pages/api", "./src/pages/api", { recursive: true })
+console.log("version", version)

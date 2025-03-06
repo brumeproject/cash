@@ -59,7 +59,10 @@ const nextConfig: NextConfig = withNextSidebuild({
   /* config options here */
   reactStrictMode: true,
 
-  output: process.env.OUTPUT as any,
+  /**
+   * Recommended in order to output the webapp as HTML
+   */
+  output: "export",
 
   /**
    * Recommended in order to get deterministic build ID
@@ -72,36 +75,31 @@ const nextConfig: NextConfig = withNextSidebuild({
     yield compileServiceWorker(wpconfig);
   },
 
-  headers: (() => {
-    if (process.env.OUTPUT === "export")
-      return
+  async headers() {
     if (process.env.NODE_ENV !== "production")
-      return
-    return async function () {
-      return [
-        {
-          source: "/:path*",
-          headers: [
-            /**
-             * Recommended in order to be embedded with strong restrictions
-             */
-            {
-              key: "Allow-CSP-From",
-              value: "*"
-            },
-            /**
-             * Mandatory in order to get almost immutable caching
-             */
-            {
-              key: "Cache-Control",
-              value: "public, max-age=31536000, immutable",
-            }
-          ]
-        }
-      ]
-    }
-  })()
-
+      return []
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          /**
+           * Recommended in order to be embedded with strong restrictions
+           */
+          {
+            key: "Allow-CSP-From",
+            value: "*"
+          },
+          /**
+           * Mandatory in order to get almost immutable caching
+           */
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
+          }
+        ]
+      }
+    ]
+  }
 });
 
 export default nextConfig;
