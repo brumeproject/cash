@@ -1,0 +1,5 @@
+User-agent: *
+
+Disallow: /_index
+
+Sitemap: /sitemap.xml
