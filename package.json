@@ -4,15 +4,14 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build && node ./build.mjs",
-    "start": "npx serve --config ../serve.json ./out",
+    "build": "node ./build.1.mjs && OUTPUT=export next build && node ./build.2.mjs && next build; node ./build.3.mjs",
+    "start": "node ./build.1.mjs && OUTPUT=export next build && node ./build.2.mjs && next start; node ./build.3.mjs",
     "lint": "next lint"
   },
   "dependencies": {
     "@hazae41/immutable": "^1.0.13",
     "@hazae41/labase": "^1.0.8",
     "@heroicons/react": "^2.2.0",
-    "i": "^0.3.7",
     "next": "15.1.6",
     "npm": "^11.0.0",
     "react": "^19.0.0",
