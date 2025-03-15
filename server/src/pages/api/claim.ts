@@ -28,6 +28,7 @@ export default async function handler(
   const secretsZeroHexArray = z.array(z.string()).asOrThrow(req.body.secretsZeroHexArray)
 
   for (const secretZeroHex of secretsZeroHexArray) {
+    // TODO: batch verify secrets
     const secretValueZeroHex = await mixin.verifySecretOrThrow(secretZeroHex)
     const secretValueBigInt = BigInt(secretValueZeroHex)
 
