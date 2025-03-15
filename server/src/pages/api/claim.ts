@@ -16,8 +16,10 @@ export default async function handler(
 
   const nonceZeroHex = z.string().asOrThrow(req.body.nonceZeroHex)
   const receiverZeroHex = z.string().asOrThrow(req.body.receiverZeroHex)
+  const signatureZeroHex = z.string().asOrThrow(req.body.signatureZeroHex)
 
   // TODO: add authentication to avoid various attacks with nonce
+
 
   // TODO: verify database if nonce is not replayed
 
