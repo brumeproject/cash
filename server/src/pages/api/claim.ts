@@ -23,6 +23,7 @@ export default async function handler(
 
   // TODO: verify database if nonce is not replayed
 
+  // TODO: remove chain id
   await using mixin = await worker.createOrThrow({ chainIdString, contractZeroHex, receiverZeroHex, nonceZeroHex })
 
   const secretsZeroHexArray = z.array(z.string()).asOrThrow(req.body.secretsZeroHexArray)
