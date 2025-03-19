@@ -2,37 +2,59 @@ import { AnchorChip } from "@/libs/ui/anchors";
 import { Ascii } from "@/mods/ascii";
 import { Locale } from "@/mods/locale";
 import { useLocaleContext } from "@/mods/locale/mods/context";
+import { NetWorker } from "@hazae41/networker";
 import Head from "next/head";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect } from "react";
+import { bytesToHex } from "viem";
+import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 
-async function timeout(delay: number) {
-  return new Promise(ok => setTimeout(ok, delay))
-}
+const account = privateKeyToAccount(generatePrivateKey())
 
-async function loop(callback: () => Promise<void>, signal: AbortSignal) {
-  while (!signal.aborted) await callback()
-}
+const contractZeroHex = "0xabc755011B810fDC31F3504f0F855cadFcb2685A".toLowerCase()
+const receiverZeroHex = account.address.toLowerCase()
 
 export function Page() {
   const locale = useLocaleContext().getOrThrow()
-  const [closed, setClosed] = useState(false)
+
+  const f = useCallback(async () => {
+    using worker = new NetWorker()
+
+    const nonceBytes = crypto.getRandomValues(new Uint8Array(32))
+    const nonceZeroHex = bytesToHex(nonceBytes)
+
+    await using mixin = await worker.createOrThrow({ contractZeroHex, receiverZeroHex, nonceZeroHex })
+
+    const minimumBigInt = BigInt(100000)
+    const minimumZeroHex = `0x${minimumBigInt.toString(16)}`
+
+    const result0 = await mixin.generateOrThrow(minimumZeroHex)
+    const result1 = await mixin.generateOrThrow(minimumZeroHex)
+    const result2 = await mixin.generateOrThrow(minimumZeroHex)
+
+    const secretsZeroHex = `0x${result0.secretZeroHex.slice(2)}${result1.secretZeroHex.slice(2)}${result2.secretZeroHex.slice(2)}`
+    const signatureZeroHex = await account.signMessage({ message: nonceZeroHex })
+
+    const headers = { "Content-Type": "application/json" }
+    const body = JSON.stringify({ nonceZeroHex, secretsZeroHex, signatureZeroHex })
+
+    const response = await fetch("http://localhost:3001/api/claim", { method: "POST", headers, body })
+
+    if (!response.ok)
+      throw new Error("Claim failed")
+
+    const valueZeroHex = await response.json()
+    const valueBigInt = BigInt(valueZeroHex)
+
+    console.log(valueBigInt)
+  }, [])
 
   useEffect(() => {
-    const aborter = new AbortController()
-
-    loop(async () => {
-      await timeout(4000)
-      setClosed(true)
-      await timeout(250)
-      setClosed(false)
-    }, aborter.signal).catch(console.error)
-
-    return () => aborter.abort()
+    f().catch(e => console.error({ e }))
   }, [])
 
   return <div className="p-safe h-full w-full flex flex-col overflow-y-scroll animate-opacity-in">
     <Head>
-      <title>Brume</title>
+      <title>Brume Cash</title>
     </Head>
     <div className="grow flex flex-col w-full m-auto max-w-6xl">
       <div className="h-[100dvh] flex flex-col p-8">
