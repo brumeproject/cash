@@ -53,26 +53,26 @@ export type Database = {
         Row: {
           amount: string
           created_at: string
-          data: string
           id: number
           nonce: string
           receiver: string
+          secrets: string
         }
         Insert: {
           amount: string
           created_at?: string
-          data: string
           id?: number
           nonce: string
           receiver: string
+          secrets: string
         }
         Update: {
           amount?: string
           created_at?: string
-          data?: string
           id?: number
           nonce?: string
           receiver?: string
+          secrets?: string
         }
         Relationships: []
       }

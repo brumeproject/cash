@@ -5,22 +5,25 @@ import { z } from "@hazae41/gardien";
 import { createClient } from "@supabase/supabase-js";
 import type { NextApiRequest, NextApiResponse } from "next";
 
+await CashServerWasm.initBundled()
+
 const supabase = createClient<Database>("https://nqxmcclvbwhioxcrhtaz.supabase.co", process.env.SUPABASE_KEY!)
 
 const contractZeroHex = "0xabc755011B810fDC31F3504f0F855cadFcb2685A"
+using contractMemory = CashServerWasm.base16_decode_mixed(contractZeroHex.slice(2))
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse,
 ) {
-  await CashServerWasm.initBundled()
-
-  const nonceZeroHex = z.string().asOrThrow(req.body.nonceZeroHex)
+  const nonceZeroHex = z.string().asOrThrow(req.body.nonceZeroHex).toLowerCase()
   const receiverZeroHex = z.string().asOrThrow(req.body.receiverZeroHex).toLowerCase()
   const signatureZeroHex = z.string().asOrThrow(req.body.signatureZeroHex).toLowerCase()
-  const secretsZeroHexArray = z.array(z.string()).asOrThrow(req.body.secretsZeroHexArray)
+  const secretsZeroHex = z.string().asOrThrow(req.body.secretsZeroHex).toLowerCase()
 
   using nonceMemory = CashServerWasm.base16_decode_mixed(nonceZeroHex.slice(2))
+  using receiverMemory = CashServerWasm.base16_decode_mixed(receiverZeroHex.slice(2))
+  using secretsMemory = CashServerWasm.base16_decode_mixed(secretsZeroHex.slice(2))
 
   const nonceHashBytes = new Uint8Array(await crypto.subtle.digest("SHA-256", nonceMemory.bytes))
   using nonceHashMemory = new CashServerWasm.Memory(nonceHashBytes)
@@ -40,7 +43,6 @@ export default async function handler(
   if (addressZeroHex !== receiverZeroHex)
     throw new Error("Invalid signature")
 
-  // TODO: verify database if nonce is not replayed
   const { data, error } = await supabase
     .from("mints")
     .select("*")
@@ -54,13 +56,28 @@ export default async function handler(
   if (data.length > 0)
     throw new Error("Nonce replayed")
 
+  using mixinWasm = new CashServerWasm.NetworkMixin(contractMemory, receiverMemory, nonceMemory)
 
-  new CashServerWasm.NetworkMixin()
+  using valueMemory = mixinWasm.verify_secrets(secretsMemory)
+  const valueRawHex = CashServerWasm.base16_encode_lower(valueMemory)
+  const valueZeroHex = `0x${valueRawHex}`
+  const valueBigInt = BigInt(valueZeroHex)
 
-  // TODO: remove chain id
-  // await using mixin = await worker.createOrThrow({ contractZeroHex, receiverZeroHex, nonceZeroHex })
+  {
+    const receiver = receiverZeroHex
+    const amount = valueBigInt.toString()
+    const nonce = nonceZeroHex
+    const secrets = secretsZeroHex
 
-  // const totalValueZeroHex = await mixin.verifySecretsOrThrow(secretsZeroHexArray)
+    const row = { receiver, amount, nonce, secrets }
 
-  // res.status(200).json({ totalValueZeroHex });
+    const { error } = await supabase
+      .from("mints")
+      .insert(row)
+
+    if (error != null)
+      throw new Error("Database error")
+
+    res.status(200).json(valueZeroHex);
+  }
 }

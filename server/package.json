@@ -9,12 +9,8 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@brumewallet/cash.server.wasm": "^1.0.1",
-    "@hazae41/base16.wasm": "^1.0.5",
+    "@brumewallet/cash.server.wasm": "^1.0.2",
     "@hazae41/gardien": "^0.1.1",
-    "@hazae41/network.wasm": "^1.0.3",
-    "@hazae41/networker": "^1.0.3",
-    "@hazae41/secp256k1.wasm": "^1.0.10",
     "@supabase/supabase-js": "^2.49.1",
     "next": "15.2.2",
     "react": "^19.0.0",
