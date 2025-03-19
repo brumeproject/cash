@@ -1,6 +1,5 @@
 import { AnchorChip } from "@/libs/ui/anchors";
 import { Ascii } from "@/mods/ascii";
-import { Locale } from "@/mods/locale";
 import { useLocaleContext } from "@/mods/locale/mods/context";
 import { NetWorker } from "@hazae41/networker";
 import Head from "next/head";
@@ -66,11 +65,11 @@ export function Page() {
         </div>
         <div className="h-16 grow shrink-0" />
         <div className="font-medium text-6xl">
-          Brume
+          Cash
         </div>
         <div className="h-2 shrink-0" />
         <div className="text-default-contrast text-2xl">
-          {Locale.get(Locale.TechnologiesToHideYourselfInPlainSight, locale)}
+          PoW-based peer-to-peer payment system
         </div>
         <div className="h-4 shrink-0" />
         <div className="flex flex-wrap gap-2">
