@@ -50,8 +50,6 @@ export default async function handler(
   const receiverBase16 = receiverZeroHex.slice(2).padStart(64, "0")
   using receiverMemory = CashServerWasm.base16_decode_mixed(receiverBase16)
 
-  console.log({ contractBase16, nonceBase16, receiverBase16 })
-
   using mixinWasm = new CashServerWasm.NetworkMixin(contractMemory, receiverMemory, nonceMemory)
 
   const secretsBase16 = secretsZeroHex.slice(2)
