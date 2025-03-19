@@ -9,7 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@brumewallet/cash.server.wasm": "^1.0.2",
+    "@brumewallet/cash.server.wasm": "^1.0.3",
     "@hazae41/gardien": "^0.1.1",
     "@supabase/supabase-js": "^2.49.1",
     "next": "15.2.2",
