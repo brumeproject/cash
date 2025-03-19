@@ -11,6 +11,7 @@
   "dependencies": {
     "@hazae41/immutable": "^1.0.13",
     "@hazae41/labase": "^1.0.8",
+    "@hazae41/networker": "^1.0.4",
     "@heroicons/react": "^2.2.0",
     "next": "15.1.6",
     "npm": "^11.0.0",
