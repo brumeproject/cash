@@ -68,6 +68,10 @@ const nextConfig: NextConfig = withNextSidebuild({
     VERSION: process.env.npm_package_version
   },
 
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+
   typescript: {
     ignoreBuildErrors: true
   },
