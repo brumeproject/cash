@@ -53,11 +53,11 @@ export function Page() {
     <div className="grow flex flex-col w-full m-auto max-w-6xl">
       <div className="h-[100dvh] flex flex-col p-8">
         <div className="font-medium text-6xl">
-          Brume Cash
+          Monetize anything on the web
         </div>
         <div className="h-2 shrink-0" />
         <div className="text-default-contrast text-2xl">
-          PoW-based peer-to-peer anonymous payment system
+          Make your users pay anonymously with their computation
         </div>
       </div>
     </div>
