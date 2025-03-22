@@ -4,7 +4,7 @@ import { ClickableOppositeButton } from "@/libs/ui/buttons";
 import { Loading } from "@/libs/ui/loading";
 import { NetWorker } from "@hazae41/networker";
 import Head from "next/head";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { bytesToHex } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { Locale } from "../locale";
@@ -14,13 +14,6 @@ const account = privateKeyToAccount(generatePrivateKey())
 
 const contractZeroHex = "0xabc755011B810fDC31F3504f0F855cadFcb2685A".toLowerCase()
 const receiverZeroHex = account.address.toLowerCase()
-
-const edits = [
-  "website",
-  "API",
-  "app",
-  "service"
-]
 
 async function wait(delay: number) {
   await new Promise(ok => setTimeout(ok, delay))
@@ -67,25 +60,42 @@ export function Page() {
     }
   }, [])
 
-  const [edit, setEdit] = useState("")
+  const list = useMemo(() => [
+    Locale.get(Locale.MonetizeAnyService, locale),
+    Locale.get(Locale.MonetizeAnyWebsite, locale),
+    Locale.get(Locale.MonetizeAnyApp, locale),
+    Locale.get(Locale.MonetizeAnyAPI, locale),
+    Locale.get(Locale.MonetizeAnyContent, locale),
+  ], [])
+
+  const [output, setOutput] = useState(list[0])
 
   const write = useCallback(async () => {
-    for (let i = 0; true; i = (i + 1) % edits.length) {
-      setEdit("")
+    for (let i = 0; true; i = (i + 1) % list.length) {
+      const prev = list[i % list.length]
+      const next = list[(i + 1) % list.length]
 
-      const edit = edits[i]
+      for (let j = 0; j < prev.length; j++) {
+        if (next[j] === prev[j])
+          continue
 
-      for (const char of edit) {
-        setEdit(prev => prev + char)
-        await wait(150)
+        for (; j < prev.length; j++) {
+          setOutput(text => text.slice(0, -1))
+          await wait(150)
+        }
+      }
+
+      for (let j = 0; j < next.length; j++) {
+        if (next[j] === prev[j])
+          continue
+
+        for (; j < next.length; j++) {
+          setOutput(text => text + next[j])
+          await wait(150)
+        }
       }
 
       await wait(3000)
-
-      for (const _ of edit) {
-        setEdit(prev => prev.slice(0, -1))
-        await wait(150)
-      }
     }
   }, [])
 
@@ -106,11 +116,11 @@ export function Page() {
     <div className="h-[max(24rem,100dvh_-_16rem)] flex-none flex flex-col items-center">
       <div className="grow" />
       <h1 className="text-center text-6xl font-medium">
-        {`Monetize any ${edit}`}
+        {output}
       </h1>
       <div className="h-4" />
       <div className="text-center text-default-contrast text-2xl">
-        {`Make your users pay anonymously with their computation`}
+        {Locale.get(Locale.MakeYourUsersPayAnonymouslyWithTheirComputation, locale)}
       </div>
       <div className="grow" />
       <div className="flex items-center">
@@ -120,7 +130,7 @@ export function Page() {
           {loading
             ? <Loading className="size-5" />
             : <Outline.BoltIcon className="size-5" />}
-          {`Start`}
+          {Locale.get(Locale.Try, locale)}
         </ClickableOppositeButton>
       </div>
       <div className="grow" />
