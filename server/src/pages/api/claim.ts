@@ -56,36 +56,38 @@ export default async function handler(
 
   const receiverZeroHex = await recoverMessageAddress({ message: nonceZeroHex, signature: signatureZeroHex as `0x${string}` }).then(x => x.toLowerCase())
 
-  await CashServerWasm.initBundled()
-
-  const contractBase16 = contractZeroHex.slice(2).padStart(64, "0")
-  using contractMemory = CashServerWasm.base16_decode_mixed(contractBase16)
-
-  const nonceBase16 = nonceZeroHex.slice(2).padStart(64, "0")
-  using nonceMemory = CashServerWasm.base16_decode_mixed(nonceBase16)
-
-  const receiverBase16 = receiverZeroHex.slice(2).padStart(64, "0")
-  using receiverMemory = CashServerWasm.base16_decode_mixed(receiverBase16)
-
-  using mixinWasm = new CashServerWasm.NetworkMixin(contractMemory, receiverMemory, nonceMemory)
-
-  const secretsBase16 = secretsZeroHex.slice(2)
-  using secretsMemory = CashServerWasm.base16_decode_mixed(secretsBase16)
-
-  using valueMemory = mixinWasm.verify_secrets(secretsMemory)
-  const valueRawHex = CashServerWasm.base16_encode_lower(valueMemory)
-  const valueZeroHex = `0x${valueRawHex}`
-  const valueBigInt = BigInt(valueZeroHex)
-
   {
-    const address = receiverZeroHex
-    const amount = valueBigInt.toString()
+    await CashServerWasm.initBundled()
 
-    const { error } = await supabase.rpc("mint", { address, amount })
+    const contractBase16 = contractZeroHex.slice(2).padStart(64, "0")
+    using contractMemory = CashServerWasm.base16_decode_mixed(contractBase16)
 
-    if (error != null)
-      throw new Error("Database error", { cause: error.message })
+    const nonceBase16 = nonceZeroHex.slice(2).padStart(64, "0")
+    using nonceMemory = CashServerWasm.base16_decode_mixed(nonceBase16)
 
-    res.status(200).setHeaders(headers).json(valueZeroHex);
+    const receiverBase16 = receiverZeroHex.slice(2).padStart(64, "0")
+    using receiverMemory = CashServerWasm.base16_decode_mixed(receiverBase16)
+
+    using mixinWasm = new CashServerWasm.NetworkMixin(contractMemory, receiverMemory, nonceMemory)
+
+    const secretsBase16 = secretsZeroHex.slice(2)
+    using secretsMemory = CashServerWasm.base16_decode_mixed(secretsBase16)
+
+    using valueMemory = mixinWasm.verify_secrets(secretsMemory)
+    const valueRawHex = CashServerWasm.base16_encode_lower(valueMemory)
+    const valueZeroHex = `0x${valueRawHex}`
+    const valueBigInt = BigInt(valueZeroHex)
+
+    {
+      const address = receiverZeroHex
+      const amount = valueBigInt.toString()
+
+      const { error } = await supabase.rpc("mint", { address, amount })
+
+      if (error != null)
+        throw new Error("Database error", { cause: error.message })
+
+      res.status(200).setHeaders(headers).json(valueZeroHex);
+    }
   }
 }
