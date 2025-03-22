@@ -29,12 +29,12 @@ export default async function handler(
   const { data, error } = await supabase
     .from("mints")
     .select("*")
-    .limit(1)
     .eq("nonce", nonceZeroHex)
     .eq("receiver", receiverZeroHex)
+    .limit(1)
 
   if (error != null)
-    throw new Error("Database error", { cause: error.message })
+    throw new Error("Database error")
 
   if (data.length > 0)
     throw new Error("Nonce replayed")
@@ -75,6 +75,50 @@ export default async function handler(
     if (error != null)
       throw new Error("Database error")
 
-    res.status(200).setHeaders(headers).json(valueZeroHex);
+    {
+      const { data, error } = await supabase
+        .from("balances")
+        .select("*")
+        .eq("address", receiverZeroHex)
+        .limit(1)
+
+      if (error != null)
+        throw new Error("Database error")
+
+      if (data.length === 0) {
+        const address = receiverZeroHex
+        const balance = valueBigInt.toString()
+
+        const row = { address, balance }
+
+        const { error } = await supabase
+          .from("balances")
+          .insert(row)
+
+        if (error != null)
+          throw new Error("Database error")
+
+        //
+      } else {
+        const [row] = data
+
+        const previousBalanceBigInt = BigInt(row.balance)
+        const currentBalanceBigInt = previousBalanceBigInt + valueBigInt
+
+        const address = receiverZeroHex
+        const balance = currentBalanceBigInt.toString()
+
+        const { error } = await supabase
+          .from("balances")
+          .upsert({ address, balance })
+
+        if (error != null)
+          throw new Error("Database error")
+
+        //
+      }
+
+      res.status(200).setHeaders(headers).json(valueZeroHex);
+    }
   }
 }
