@@ -54,27 +54,27 @@ export type Database = {
       }
       mints: {
         Row: {
+          address: string
           amount: string
           created_at: string
           id: string
           nonce: string
-          receiver: string
           secrets: string
         }
         Insert: {
+          address: string
           amount: string
           created_at?: string
           id?: string
           nonce: string
-          receiver: string
           secrets: string
         }
         Update: {
+          address?: string
           amount?: string
           created_at?: string
           id?: string
           nonce?: string
-          receiver?: string
           secrets?: string
         }
         Relationships: []
@@ -84,10 +84,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      mint: {
+      mint:
+      | {
         Args: {
           address: string
           amount: string
+        }
+        Returns: undefined
+      }
+      | {
+        Args: {
+          address: string
+          amount: string
+          nonce: string
+          secrets: string
         }
         Returns: undefined
       }

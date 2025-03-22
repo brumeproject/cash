@@ -81,8 +81,10 @@ export default async function handler(
     {
       const address = receiverZeroHex
       const amount = valueBigInt.toString()
+      const nonce = nonceZeroHex
+      const secrets = secretsZeroHex
 
-      const { error } = await supabase.rpc("mint", { address, amount })
+      const { error } = await supabase.rpc("mint", { address, amount, nonce, secrets })
 
       if (error != null)
         throw new Error("Database error", { cause: error.message })
