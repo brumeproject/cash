@@ -1,6 +1,9 @@
+import { Outline } from "@/libs/heroicons";
+import { ClickableOppositeButton } from "@/libs/ui/buttons";
+import { Loading } from "@/libs/ui/loading";
 import { NetWorker } from "@hazae41/networker";
 import Head from "next/head";
-import { useCallback, useEffect } from "react";
+import { useCallback, useState } from "react";
 import { bytesToHex } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 
@@ -10,56 +13,70 @@ const contractZeroHex = "0xabc755011B810fDC31F3504f0F855cadFcb2685A".toLowerCase
 const receiverZeroHex = account.address.toLowerCase()
 
 export function Page() {
+  const [loading, setLoading] = useState(false)
+
   const f = useCallback(async () => {
-    using worker = new NetWorker()
+    try {
+      setLoading(true)
 
-    const nonceBytes = crypto.getRandomValues(new Uint8Array(32))
-    const nonceZeroHex = bytesToHex(nonceBytes)
+      using worker = new NetWorker()
 
-    await using mixin = await worker.createOrThrow({ contractZeroHex, receiverZeroHex, nonceZeroHex })
+      const nonceBytes = crypto.getRandomValues(new Uint8Array(32))
+      const nonceZeroHex = bytesToHex(nonceBytes)
 
-    const minimumBigInt = BigInt(100000)
-    const minimumZeroHex = `0x${minimumBigInt.toString(16)}`
+      await using mixin = await worker.createOrThrow({ contractZeroHex, receiverZeroHex, nonceZeroHex })
 
-    const result0 = await mixin.generateOrThrow(minimumZeroHex)
-    const result1 = await mixin.generateOrThrow(minimumZeroHex)
-    const result2 = await mixin.generateOrThrow(minimumZeroHex)
+      const minimumBigInt = BigInt(100000)
+      const minimumZeroHex = `0x${minimumBigInt.toString(16)}`
 
-    const secretsZeroHex = `0x${result0.secretZeroHex.slice(2)}${result1.secretZeroHex.slice(2)}${result2.secretZeroHex.slice(2)}`
-    const signatureZeroHex = await account.signMessage({ message: nonceZeroHex })
+      const generated = await mixin.generateOrThrow(minimumZeroHex)
 
-    const headers = { "Content-Type": "application/json" }
-    const body = JSON.stringify({ nonceZeroHex, secretsZeroHex, signatureZeroHex })
+      const secretsZeroHex = `0x${generated.secretZeroHex.slice(2)}`
+      const signatureZeroHex = await account.signMessage({ message: nonceZeroHex })
 
-    const response = await fetch("https://api.cash.brume.money/api/claim", { method: "POST", headers, body })
+      const headers = { "Content-Type": "application/json" }
+      const body = JSON.stringify({ nonceZeroHex, secretsZeroHex, signatureZeroHex })
 
-    if (!response.ok)
-      throw new Error("Claim failed")
+      const response = await fetch("https://api.cash.brume.money/api/claim", { method: "POST", headers, body })
 
-    const valueZeroHex = await response.json()
-    const valueBigInt = BigInt(valueZeroHex)
+      if (!response.ok)
+        throw new Error("Claim failed")
 
-    console.log(valueBigInt)
-  }, [])
+      const valueZeroHex = await response.json()
+      const valueBigInt = BigInt(valueZeroHex)
 
-  useEffect(() => {
-    f().catch(e => console.error({ e }))
+      alert(`You just mined and sent ${valueBigInt.toString()} wei to ${receiverZeroHex}`)
+    } finally {
+      setLoading(false)
+    }
   }, [])
 
   return <div className="p-safe h-full w-full flex flex-col overflow-y-scroll animate-opacity-in">
     <Head>
       <title>Brume Cash</title>
     </Head>
-    <div className="grow flex flex-col w-full m-auto max-w-6xl">
-      <div className="h-[100dvh] flex flex-col p-8">
-        <div className="font-medium text-6xl">
-          Monetize anything on the web
-        </div>
-        <div className="h-2 shrink-0" />
-        <div className="text-default-contrast text-2xl">
-          Make your users pay anonymously with their computation
-        </div>
+    <div className="h-[max(24rem,100dvh_-_16rem)] flex-none flex flex-col items-center">
+      <div className="grow" />
+      <h1 className="text-center text-6xl font-medium">
+        {`Monetize anything on the web`}
+      </h1>
+      <div className="h-4" />
+      <div className="text-center text-default-contrast text-2xl">
+        {`Make your users pay anonymously with their computation`}
       </div>
+      <div className="grow" />
+      <div className="flex items-center">
+        <ClickableOppositeButton
+          disabled={loading}
+          onClick={f}>
+          {loading
+            ? <Loading className="size-5" />
+            : <Outline.BoltIcon className="size-5" />}
+          {`Start`}
+        </ClickableOppositeButton>
+      </div>
+      <div className="grow" />
+      <div className="grow" />
     </div>
   </div>
 }

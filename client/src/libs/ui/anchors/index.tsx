@@ -2,7 +2,7 @@ import { Booleanish } from "@/libs/booleanish"
 import { AnchorProps } from "@/libs/react/props/anchor"
 import { ChildrenProps } from "@/libs/react/props/children"
 
-export function AnchorGapperAndClicker(props: ChildrenProps) {
+export function GapperAndClickerInAnchorDiv(props: ChildrenProps) {
   const { children } = props
 
   return <div className="h-full w-full flex justify-center items-center gap-2 group-aria-[disabled=false]:group-active:scale-90 transition-transform">
@@ -10,14 +10,14 @@ export function AnchorGapperAndClicker(props: ChildrenProps) {
   </div>
 }
 
-export function AnchorChip(props: ChildrenProps & AnchorProps & { "aria-disabled"?: Booleanish }) {
+export function ClickableOppositeAnchor(props: ChildrenProps & AnchorProps & { "aria-disabled"?: Booleanish }) {
   const { children, "aria-disabled": disabled = false, ...rest } = props
 
-  return <a className="group rounded-full po-2 bg-default-contrast outline-none aria-[disabled=false]:hover:bg-default-double-contrast focus-visible:outline-contrast aria-disabled:opacity-50 transition-opacity"
+  return <a className="group po-2 bg-opposite text-opposite rounded-xl outline-none aria-[disabled=false]:hover:bg-opposite-double-contrast focus-visible:outline-opposite aria-disabled:opacity-50 transition-opacity"
     aria-disabled={disabled}
     {...rest}>
-    <AnchorGapperAndClicker>
+    <GapperAndClickerInAnchorDiv>
       {children}
-    </AnchorGapperAndClicker>
+    </GapperAndClickerInAnchorDiv>
   </a>
 }
