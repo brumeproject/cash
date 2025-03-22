@@ -69,7 +69,7 @@ export function Page() {
 
   const [edit, setEdit] = useState("")
 
-  const g = useCallback(async () => {
+  const write = useCallback(async () => {
     for (let i = 0; true; i = (i + 1) % edits.length) {
       const edit = edits[i]
 
@@ -94,7 +94,7 @@ export function Page() {
       return
     once.current = true
 
-    g().catch(console.error)
+    write().catch(console.error)
   }, [])
 
   return <div className="p-safe h-full w-full flex flex-col overflow-y-scroll animate-opacity-in">
