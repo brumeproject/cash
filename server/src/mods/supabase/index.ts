@@ -1,6 +1,6 @@
 export type Json =
   | string
-  | number
+  | string
   | boolean
   | null
   | { [key: string]: Json | undefined }
@@ -38,14 +38,17 @@ export type Database = {
         Row: {
           address: string
           balance: string
+          updated_at: string
         }
         Insert: {
           address: string
           balance: string
+          updated_at?: string
         }
         Update: {
           address?: string
           balance?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -53,7 +56,7 @@ export type Database = {
         Row: {
           amount: string
           created_at: string
-          id: number
+          id: string
           nonce: string
           receiver: string
           secrets: string
@@ -61,7 +64,7 @@ export type Database = {
         Insert: {
           amount: string
           created_at?: string
-          id?: number
+          id?: string
           nonce: string
           receiver: string
           secrets: string
@@ -69,7 +72,7 @@ export type Database = {
         Update: {
           amount?: string
           created_at?: string
-          id?: number
+          id?: string
           nonce?: string
           receiver?: string
           secrets?: string
@@ -81,7 +84,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      mint: {
+        Args: {
+          address: string
+          amount: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

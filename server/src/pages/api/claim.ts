@@ -8,6 +8,36 @@ import { recoverMessageAddress } from "viem";
 
 const supabase = createClient<Database>("https://vqceovbkcavejkqyqbqd.supabase.co", process.env.SUPABASE_KEY!)
 
+/* 
+create or replace function mint(
+    address text,
+    amount numeric,
+    nonce text,
+    secrets text
+) returns void as $$
+begin
+    if exists (
+        select 1 
+        from mints 
+        where mints.address = mint.address 
+        and mints.nonce = mint.nonce
+    ) then
+        raise exception 'Nonce replayed';
+    end if;
+
+    insert into balances (address, balance)
+    values (mint.address, mint.amount)
+    on conflict on constraint balances_pkey
+    do update set
+        balance = balances.balance + mint.amount,
+        updated_at = current_timestamp;
+
+    insert into mints (address, amount, nonce, secrets)
+    values (mint.address, mint.amount, mint.nonce, mint.secrets);
+end;
+$$ language plpgsql;
+*/
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse,
@@ -25,19 +55,6 @@ export default async function handler(
   const signatureZeroHex = z.string().asOrThrow(req.body.signatureZeroHex).toLowerCase()
 
   const receiverZeroHex = await recoverMessageAddress({ message: nonceZeroHex, signature: signatureZeroHex as `0x${string}` }).then(x => x.toLowerCase())
-
-  const { data, error } = await supabase
-    .from("mints")
-    .select("*")
-    .eq("nonce", nonceZeroHex)
-    .eq("receiver", receiverZeroHex)
-    .limit(1)
-
-  if (error != null)
-    throw new Error("Database error")
-
-  if (data.length > 0)
-    throw new Error("Nonce replayed")
 
   await CashServerWasm.initBundled()
 
@@ -61,48 +78,14 @@ export default async function handler(
   const valueBigInt = BigInt(valueZeroHex)
 
   {
-    const receiver = receiverZeroHex
+    const address = receiverZeroHex
     const amount = valueBigInt.toString()
-    const nonce = nonceZeroHex
-    const secrets = secretsZeroHex
 
-    const row = { receiver, amount, nonce, secrets }
-
-    const { error } = await supabase
-      .from("mints")
-      .insert(row)
+    const { error } = await supabase.rpc("mint", { address, amount })
 
     if (error != null)
-      throw new Error("Database error")
+      throw new Error("Database error", { cause: error.message })
 
-    {
-      const { data, error } = await supabase
-        .from("balances")
-        .select("*")
-        .eq("address", receiverZeroHex)
-        .limit(1)
-
-      if (error != null)
-        throw new Error("Database error")
-
-      {
-        const [row] = data
-
-        const previousBalanceBigInt = row == null ? 0n : BigInt(row.balance)
-        const currentBalanceBigInt = previousBalanceBigInt + valueBigInt
-
-        const address = receiverZeroHex
-        const balance = currentBalanceBigInt.toString()
-
-        const { error } = await supabase
-          .from("balances")
-          .upsert({ address, balance })
-
-        if (error != null)
-          throw new Error("Database error")
-
-        res.status(200).setHeaders(headers).json(valueZeroHex);
-      }
-    }
+    res.status(200).setHeaders(headers).json(valueZeroHex);
   }
 }
