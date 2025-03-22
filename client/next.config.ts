@@ -64,6 +64,10 @@ const nextConfig: NextConfig = withNextSidebuild({
    */
   output: "export",
 
+  env: {
+    VERSION: process.env.npm_package_version
+  },
+
   /**
    * Recommended in order to get deterministic build ID
    */

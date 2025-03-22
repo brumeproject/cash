@@ -1,4 +1,5 @@
 import { Outline } from "@/libs/heroicons";
+import { TextAnchor } from "@/libs/ui/anchors";
 import { ClickableOppositeButton } from "@/libs/ui/buttons";
 import { Loading } from "@/libs/ui/loading";
 import { NetWorker } from "@hazae41/networker";
@@ -6,6 +7,8 @@ import Head from "next/head";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { bytesToHex } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
+import { Locale } from "../locale";
+import { useLocaleContext } from "../locale/mods/context";
 
 const account = privateKeyToAccount(generatePrivateKey())
 
@@ -24,6 +27,8 @@ async function wait(delay: number) {
 }
 
 export function Page() {
+  const locale = useLocaleContext().getOrThrow()
+
   const [loading, setLoading] = useState(false)
 
   const f = useCallback(async () => {
@@ -118,6 +123,20 @@ export function Page() {
       </div>
       <div className="grow" />
       <div className="grow" />
+    </div>
+    <div className="h-[50vh]" />
+    <div className="p-4 flex items-center justify-center gap-2">
+      <TextAnchor
+        target="_blank" rel="noreferrer"
+        href="https://brume.money">
+        {Locale.get(Locale.MadeByCypherpunks, locale)}
+      </TextAnchor>
+      <span>
+        ·
+      </span>
+      <span>
+        v{process.env.VERSION}
+      </span>
     </div>
   </div>
 }
