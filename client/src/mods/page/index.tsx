@@ -57,7 +57,7 @@ export function Page() {
         </div>
         <div className="h-2 shrink-0" />
         <div className="text-default-contrast text-2xl">
-          PoW-based peer-to-peer payment system
+          PoW-based peer-to-peer anonymous payment system
         </div>
       </div>
     </div>
