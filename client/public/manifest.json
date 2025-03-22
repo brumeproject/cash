@@ -1,38 +1,38 @@
 {
-	"$schema": "https://raw.githubusercontent.com/SchemaStore/schemastore/master/src/schemas/json/web-manifest.json",
+  "$schema": "https://raw.githubusercontent.com/SchemaStore/schemastore/master/src/schemas/json/web-manifest.json",
   "id": "60bbdda8-1a16-4fbf-8545-45495b7d04a4",
-	"name": "Brume",
-	"short_name": "Brume",
-	"description": "Technologies to hide yourself in plain sight",
-	"start_url": "/",
-	"display": "standalone",
-	"theme_color": "#ffffff",
-	"background_color": "#ffffff",
-	"lang": "en",
+  "name": "Brume Cash",
+  "short_name": "Brume Cash",
+  "description": "Monetize anything on the web",
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#ffffff",
+  "background_color": "#ffffff",
+  "lang": "en",
   "dir": "ltr",
-	"orientation": "any",
-	"categories": [
+  "orientation": "any",
+  "categories": [
     "finance",
-		"social",
-		"entertainment"
-	],
+    "social",
+    "entertainment"
+  ],
   "launch_handler": {
     "client_mode": "auto"
   },
-	"icons": [
+  "icons": [
     {
-			"src": "/maskicon.png",
-			"sizes": "512x512",
-			"type": "image/png",
-			"purpose": "maskable"
-		},
-		{
-			"src": "/favicon.png",
-			"sizes": "512x512",
-			"type": "image/png",
+      "src": "/maskicon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/favicon.png",
+      "sizes": "512x512",
+      "type": "image/png",
       "purpose": "any"
-		}
-	],
-	"shortcuts": [],
-  "screenshots" : []
+    }
+  ],
+  "shortcuts": [],
+  "screenshots": []
 }

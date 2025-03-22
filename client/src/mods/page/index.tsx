@@ -71,6 +71,8 @@ export function Page() {
 
   const write = useCallback(async () => {
     for (let i = 0; true; i = (i + 1) % edits.length) {
+      setEdit("")
+
       const edit = edits[i]
 
       for (const char of edit) {
