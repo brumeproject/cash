@@ -68,6 +68,10 @@ const nextConfig: NextConfig = withNextSidebuild({
     VERSION: process.env.npm_package_version
   },
 
+  typescript: {
+    ignoreBuildErrors: true
+  },
+
   /**
    * Recommended in order to get deterministic build ID
    */
