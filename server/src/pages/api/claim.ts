@@ -85,24 +85,10 @@ export default async function handler(
       if (error != null)
         throw new Error("Database error")
 
-      if (data.length === 0) {
-        const address = receiverZeroHex
-        const balance = valueBigInt.toString()
-
-        const row = { address, balance }
-
-        const { error } = await supabase
-          .from("balances")
-          .insert(row)
-
-        if (error != null)
-          throw new Error("Database error")
-
-        //
-      } else {
+      {
         const [row] = data
 
-        const previousBalanceBigInt = BigInt(row.balance)
+        const previousBalanceBigInt = row == null ? 0n : BigInt(row.balance)
         const currentBalanceBigInt = previousBalanceBigInt + valueBigInt
 
         const address = receiverZeroHex
@@ -115,10 +101,8 @@ export default async function handler(
         if (error != null)
           throw new Error("Database error")
 
-        //
+        res.status(200).setHeaders(headers).json(valueZeroHex);
       }
-
-      res.status(200).setHeaders(headers).json(valueZeroHex);
     }
   }
 }
