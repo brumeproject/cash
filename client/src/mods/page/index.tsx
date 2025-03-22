@@ -1,4 +1,3 @@
-import { useLocaleContext } from "@/mods/locale/mods/context";
 import { NetWorker } from "@hazae41/networker";
 import Head from "next/head";
 import { useCallback, useEffect } from "react";
@@ -11,8 +10,6 @@ const contractZeroHex = "0xabc755011B810fDC31F3504f0F855cadFcb2685A".toLowerCase
 const receiverZeroHex = account.address.toLowerCase()
 
 export function Page() {
-  const locale = useLocaleContext().getOrThrow()
-
   const f = useCallback(async () => {
     using worker = new NetWorker()
 
