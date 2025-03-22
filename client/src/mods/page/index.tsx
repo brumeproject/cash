@@ -3,7 +3,7 @@ import { ClickableOppositeButton } from "@/libs/ui/buttons";
 import { Loading } from "@/libs/ui/loading";
 import { NetWorker } from "@hazae41/networker";
 import Head from "next/head";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { bytesToHex } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 
@@ -11,6 +11,17 @@ const account = privateKeyToAccount(generatePrivateKey())
 
 const contractZeroHex = "0xabc755011B810fDC31F3504f0F855cadFcb2685A".toLowerCase()
 const receiverZeroHex = account.address.toLowerCase()
+
+const edits = [
+  "website",
+  "API",
+  "app",
+  "service"
+]
+
+async function wait(delay: number) {
+  await new Promise(ok => setTimeout(ok, delay))
+}
 
 export function Page() {
   const [loading, setLoading] = useState(false)
@@ -51,6 +62,36 @@ export function Page() {
     }
   }, [])
 
+  const [edit, setEdit] = useState("")
+
+  const g = useCallback(async () => {
+    for (let i = 0; true; i = (i + 1) % edits.length) {
+      const edit = edits[i]
+
+      for (const char of edit) {
+        setEdit(prev => prev + char)
+        await wait(150)
+      }
+
+      await wait(3000)
+
+      for (const _ of edit) {
+        setEdit(prev => prev.slice(0, -1))
+        await wait(150)
+      }
+    }
+  }, [])
+
+  const once = useRef(false)
+
+  useEffect(() => {
+    if (once.current)
+      return
+    once.current = true
+
+    g().catch(console.error)
+  }, [])
+
   return <div className="p-safe h-full w-full flex flex-col overflow-y-scroll animate-opacity-in">
     <Head>
       <title>Brume Cash</title>
@@ -58,7 +99,7 @@ export function Page() {
     <div className="h-[max(24rem,100dvh_-_16rem)] flex-none flex flex-col items-center">
       <div className="grow" />
       <h1 className="text-center text-6xl font-medium">
-        {`Monetize anything on the web`}
+        {`Monetize any ${edit}`}
       </h1>
       <div className="h-4" />
       <div className="text-center text-default-contrast text-2xl">
