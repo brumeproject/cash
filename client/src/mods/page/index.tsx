@@ -1,10 +1,12 @@
 import { Outline } from "@/libs/heroicons";
-import { TextAnchor } from "@/libs/ui/anchors";
+import { ClickableOppositeAnchor, TextAnchor } from "@/libs/ui/anchors";
 import { ClickableOppositeButton } from "@/libs/ui/buttons";
+import { Dialog } from "@/libs/ui/dialog";
 import { Loading } from "@/libs/ui/loading";
+import { HashSubpathProvider, useHashSubpath, usePathContext } from "@hazae41/chemin";
 import { NetWorker } from "@hazae41/networker";
 import Head from "next/head";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { bytesToHex } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { Locale } from "../locale";
@@ -20,9 +22,14 @@ async function wait(delay: number) {
 }
 
 export function Page() {
+  const path = usePathContext().getOrThrow()
   const locale = useLocaleContext().getOrThrow()
 
+  const hash = useHashSubpath(path)
+
   const [loading, setLoading] = useState(false)
+
+  const [logs, setLogs] = useState<string[]>([])
 
   const f = useCallback(async () => {
     try {
@@ -54,7 +61,7 @@ export function Page() {
       const valueZeroHex = await response.json()
       const valueBigInt = BigInt(valueZeroHex)
 
-      alert(`You just mined and sent ${valueBigInt.toString()} wei to ${receiverZeroHex}`)
+      setLogs(logs => [Locale.get(Locale.YouGeneratedX, locale)(`${valueBigInt.toString()} wei`), ...logs])
     } finally {
       setLoading(false)
     }
@@ -109,10 +116,34 @@ export function Page() {
     write().catch(console.error)
   }, [])
 
-  return <div className="p-safe h-full w-full flex flex-col overflow-y-scroll animate-opacity-in">
+  return <div id="root" className="p-safe h-full w-full flex flex-col overflow-y-scroll animate-opacity-in">
     <Head>
       <title>Brume Cash</title>
     </Head>
+    <HashSubpathProvider>
+      {hash.url.pathname === "/mint" &&
+        <Dialog>
+          <div className="h-[300px] p-1 grow flex flex-col border border-default-contrast rounded-xl">
+            <div className="po-1 grow overflow-y-auto flex flex-col gap-2">
+              {logs.map((log, i) =>
+                <Fragment key={i}>
+                  <div className="text-default-contrast">
+                    {log}
+                  </div>
+                </Fragment>)}
+            </div>
+          </div>
+          <div className="h-4" />
+          <ClickableOppositeButton
+            disabled={loading}
+            onClick={f}>
+            {loading
+              ? <Loading className="size-5" />
+              : <Outline.BoltIcon className="size-5" />}
+            {Locale.get(Locale.Generate, locale)}
+          </ClickableOppositeButton>
+        </Dialog>}
+    </HashSubpathProvider>
     <div className="p-4 grow w-full m-auto max-w-3xl flex flex-col">
       <div className="h-[max(24rem,100dvh_-_16rem)] flex-none flex flex-col items-center">
         <div className="grow" />
@@ -125,14 +156,12 @@ export function Page() {
         </div>
         <div className="grow" />
         <div className="flex items-center">
-          <ClickableOppositeButton
-            disabled={loading}
-            onClick={f}>
-            {loading
-              ? <Loading className="size-5" />
-              : <Outline.BoltIcon className="size-5" />}
+          <ClickableOppositeAnchor
+            href={hash.go("/mint").href}
+            aria-disabled={loading}>
+            <Outline.BoltIcon className="size-5" />
             {Locale.get(Locale.Try, locale)}
-          </ClickableOppositeButton>
+          </ClickableOppositeAnchor>
         </div>
         <div className="grow" />
         <div className="grow" />

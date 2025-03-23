@@ -9,9 +9,11 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@hazae41/chemin": "^2.0.10",
     "@hazae41/immutable": "^1.0.13",
     "@hazae41/labase": "^1.0.8",
     "@hazae41/networker": "^1.0.13",
+    "@hazae41/react-close-context": "^1.0.2",
     "@hazae41/symbol-dispose-polyfill": "^1.0.2",
     "@heroicons/react": "^2.2.0",
     "next": "15.1.6",

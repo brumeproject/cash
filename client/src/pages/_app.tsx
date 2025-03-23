@@ -3,6 +3,7 @@ import "@hazae41/symbol-dispose-polyfill";
 import "@/styles/index.css";
 
 import { Nullable } from "@/libs/nullable";
+import { HashPathProvider } from "@hazae41/chemin";
 import { Immutable } from "@hazae41/immutable";
 import type { AppProps } from "next/app";
 import { RefObject, useCallback, useEffect, useState } from "react";
@@ -39,5 +40,7 @@ export default function App({ Component, pageProps }: AppProps) {
   if (!client)
     return null
 
-  return <Component {...pageProps} />
+  return <HashPathProvider>
+    <Component {...pageProps} />
+  </HashPathProvider>
 }

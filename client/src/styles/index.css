@@ -1,1 +1,17 @@
 @import "../../node_modules/@hazae41/labase/src/index.css";
+
+.bg-white-half-gradient {
+  background: linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0) 0%,    /* fully transparent at top */
+      rgba(255, 255, 255, 1) 50%   /* fully opaque at bottom */
+  );
+}
+
+.bg-black-half-gradient {
+  background: linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0) 0%,    /* fully transparent at top */
+      rgba(0, 0, 0, 1) 50%   /* fully opaque at bottom */
+  );
+}
