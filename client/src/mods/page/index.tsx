@@ -113,42 +113,44 @@ export function Page() {
     <Head>
       <title>Brume Cash</title>
     </Head>
-    <div className="h-[max(24rem,100dvh_-_16rem)] flex-none flex flex-col items-center">
-      <div className="grow" />
-      <h1 className="text-center text-6xl font-medium">
-        {output}
-      </h1>
-      <div className="h-4" />
-      <div className="text-center text-default-contrast text-2xl">
-        {Locale.get(Locale.MakeYourUsersPayAnonymouslyWithTheirComputation, locale)}
+    <div className="p-4 grow w-full m-auto max-w-3xl flex flex-col">
+      <div className="h-[max(24rem,100dvh_-_16rem)] flex-none flex flex-col items-center">
+        <div className="grow" />
+        <h1 className="text-center text-6xl font-medium">
+          {output}
+        </h1>
+        <div className="h-4" />
+        <div className="text-center text-default-contrast text-2xl">
+          {Locale.get(Locale.MakeYourUsersPayAnonymouslyWithTheirComputation, locale)}
+        </div>
+        <div className="grow" />
+        <div className="flex items-center">
+          <ClickableOppositeButton
+            disabled={loading}
+            onClick={f}>
+            {loading
+              ? <Loading className="size-5" />
+              : <Outline.BoltIcon className="size-5" />}
+            {Locale.get(Locale.Try, locale)}
+          </ClickableOppositeButton>
+        </div>
+        <div className="grow" />
+        <div className="grow" />
       </div>
-      <div className="grow" />
-      <div className="flex items-center">
-        <ClickableOppositeButton
-          disabled={loading}
-          onClick={f}>
-          {loading
-            ? <Loading className="size-5" />
-            : <Outline.BoltIcon className="size-5" />}
-          {Locale.get(Locale.Try, locale)}
-        </ClickableOppositeButton>
+      <div className="h-[50vh]" />
+      <div className="p-4 flex items-center justify-center gap-2">
+        <TextAnchor
+          target="_blank" rel="noreferrer"
+          href="https://brume.money">
+          {Locale.get(Locale.MadeByCypherpunks, locale)}
+        </TextAnchor>
+        <span>
+          ·
+        </span>
+        <span>
+          v{process.env.VERSION}
+        </span>
       </div>
-      <div className="grow" />
-      <div className="grow" />
-    </div>
-    <div className="h-[50vh]" />
-    <div className="p-4 flex items-center justify-center gap-2">
-      <TextAnchor
-        target="_blank" rel="noreferrer"
-        href="https://brume.money">
-        {Locale.get(Locale.MadeByCypherpunks, locale)}
-      </TextAnchor>
-      <span>
-        ·
-      </span>
-      <span>
-        v{process.env.VERSION}
-      </span>
     </div>
   </div>
 }
