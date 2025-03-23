@@ -1,3 +1,5 @@
+import "@hazae41/symbol-dispose-polyfill";
+
 import "@/styles/index.css";
 
 import { Nullable } from "@/libs/nullable";
