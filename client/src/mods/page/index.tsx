@@ -133,7 +133,7 @@ export function Page() {
                 </Fragment>)}
             </div>
           </div>
-          <div className="h-4" />
+          <div className="h-2" />
           <ClickableOppositeButton
             disabled={loading}
             onClick={f}>
