@@ -1,14 +1,22 @@
 import { Events } from "@/libs/react/events"
 import { DarkProps } from "@/libs/react/props/dark"
 import { CloseContext, useCloseContext } from "@hazae41/react-close-context"
-import { AnimationEvent, KeyboardEvent, MouseEvent, SyntheticEvent, UIEvent, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react"
+import { AnimationEvent, KeyboardEvent, MouseEvent, ReactNode, SyntheticEvent, UIEvent, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react"
 import { flushSync } from "react-dom"
 import { ChildrenProps } from "../../react/props/children"
 import { Portal } from "../portal"
 
-export function Floor(props: ChildrenProps & DarkProps & { hesitant?: boolean }) {
+export interface HeaderProps<T = ReactNode> {
+  readonly header?: T
+}
+
+export interface FooterProps<T = ReactNode> {
+  readonly footer?: T
+}
+
+export function Floor(props: ChildrenProps & HeaderProps & FooterProps & DarkProps & { hesitant?: boolean }) {
   const close = useCloseContext().getOrThrow()
-  const { dark, children, hesitant } = props
+  const { dark, header, footer, children, hesitant } = props
 
   const previous = useRef(document.activeElement)
 
@@ -207,7 +215,7 @@ export function Floor(props: ChildrenProps & DarkProps & { hesitant?: boolean })
         <div className={`fixed inset-0 md:p-safe flex flex-col`}>
           <div className="z-10 bg-default"
             inert={!postmount}>
-            {/* <Topbar /> */}
+            {header}
           </div>
           <div className={`[container-type:size] grow flex flex-col [scrollbar-gutter:stable] ${postmount && premount ? "overflow-y-scroll" : "overflow-y-hidden"} ${premount ? "animate-slideup-in" : "animate-slideup-out"}`}
             data-theme={dark && "dark"}
@@ -245,7 +253,7 @@ export function Floor(props: ChildrenProps & DarkProps & { hesitant?: boolean })
           </div>
           <div className="z-10 bg-default"
             inert={!postmount}>
-            {/* <UserBottomNavigation /> */}
+            {footer}
           </div>
         </div>
       </dialog>
