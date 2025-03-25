@@ -31,7 +31,7 @@ export function Page() {
 
   const [logs, setLogs] = useState<string[]>([])
 
-  const f = useCallback(async () => {
+  const generate = useCallback(async () => {
     try {
       setLoading(true)
 
@@ -53,7 +53,7 @@ export function Page() {
       const headers = { "Content-Type": "application/json" }
       const body = JSON.stringify({ nonceZeroHex, secretsZeroHex, signatureZeroHex })
 
-      const response = await fetch("https://api.cash.brume.money/api/claim", { method: "POST", headers, body })
+      const response = await fetch("https://api.cash.brume.money/api/generate", { method: "POST", headers, body })
 
       if (!response.ok)
         throw new Error("Claim failed")
@@ -136,7 +136,7 @@ export function Page() {
           <div className="h-2" />
           <ClickableOppositeButton
             disabled={loading}
-            onClick={f}>
+            onClick={generate}>
             {loading
               ? <Loading className="size-5" />
               : <Outline.BoltIcon className="size-5" />}
