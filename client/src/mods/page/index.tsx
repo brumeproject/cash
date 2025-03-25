@@ -1,3 +1,4 @@
+import { Errors, UIError } from "@/libs/errors";
 import { Outline } from "@/libs/heroicons";
 import { ClickableOppositeAnchor, TextAnchor } from "@/libs/ui/anchors";
 import { ClickableOppositeButton } from "@/libs/ui/buttons";
@@ -31,7 +32,7 @@ export function Page() {
 
   const [logs, setLogs] = useState<string[]>([])
 
-  const generate = useCallback(async () => {
+  const generate = useCallback(() => Errors.runOrLogAndAlert(async () => {
     try {
       setLoading(true)
 
@@ -56,7 +57,7 @@ export function Page() {
       const response = await fetch("https://api.cash.brume.money/api/generate", { method: "POST", headers, body })
 
       if (!response.ok)
-        throw new Error("Claim failed")
+        throw new UIError("Could not claim")
 
       const valueZeroHex = await response.json()
       const valueBigInt = BigInt(valueZeroHex)
@@ -65,7 +66,7 @@ export function Page() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }), [])
 
   const list = useMemo(() => [
     Locale.get(Locale.MonetizeAnyService, locale),
