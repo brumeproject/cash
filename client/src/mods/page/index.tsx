@@ -7,7 +7,7 @@ import { Loading } from "@/libs/ui/loading";
 import { HashSubpathProvider, useHashSubpath, usePathContext } from "@hazae41/chemin";
 import { NetWorker } from "@hazae41/networker";
 import Head from "next/head";
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { EffectCallback, Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { bytesToHex } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { Locale } from "../locale";
@@ -22,15 +22,70 @@ async function wait(delay: number) {
   await new Promise(ok => setTimeout(ok, delay))
 }
 
+export async function* write(list: string[]) {
+  for (let i = 0; true; i = (i + 1) % list.length) {
+    const prev = list[i % list.length]
+    const next = list[(i + 1) % list.length]
+
+    for (let j = 0; j < prev.length; j++) {
+      if (next[j] === prev[j])
+        continue
+
+      for (; j < prev.length; j++) {
+        yield (text: string) => text.slice(0, -1)
+
+        await wait(150)
+      }
+    }
+
+    for (let j = 0; j < next.length; j++) {
+      if (next[j] === prev[j])
+        continue
+
+      for (; j < next.length; j++) {
+        yield (text: string) => text + next[j]
+
+        await wait(150)
+      }
+    }
+
+    await wait(3000)
+  }
+}
+
+export function useOnce(effect: EffectCallback) {
+  const once = useRef(false)
+
+  useEffect(() => {
+    if (once.current)
+      return
+    once.current = true
+
+    return effect()
+  }, [])
+}
+
+export function useWriter(list: string[]) {
+  const [output, setOutput] = useState(list[0])
+
+  const writeAndOutput = useCallback(async () => {
+    for await (const action of write(list)) setOutput(action)
+  }, [])
+
+  useOnce(() => void writeAndOutput().catch(console.error))
+
+  return output
+}
+
 export function Page() {
   const path = usePathContext().getOrThrow()
   const locale = useLocaleContext().getOrThrow()
 
   const hash = useHashSubpath(path)
 
-  const [loading, setLoading] = useState(false)
-
   const [logs, setLogs] = useState<string[]>([])
+
+  const [loading, setLoading] = useState(false)
 
   const generate = useCallback(() => Errors.runOrLogAndAlert(async () => {
     try {
@@ -68,7 +123,7 @@ export function Page() {
     }
   }), [])
 
-  const list = useMemo(() => [
+  const sentences = useMemo(() => [
     Locale.get(Locale.MonetizeAnyService, locale),
     Locale.get(Locale.MonetizeAnyWebsite, locale),
     Locale.get(Locale.MonetizeAnyApp, locale),
@@ -76,46 +131,7 @@ export function Page() {
     Locale.get(Locale.MonetizeAnyContent, locale),
   ], [])
 
-  const [output, setOutput] = useState(list[0])
-
-  const write = useCallback(async () => {
-    for (let i = 0; true; i = (i + 1) % list.length) {
-      const prev = list[i % list.length]
-      const next = list[(i + 1) % list.length]
-
-      for (let j = 0; j < prev.length; j++) {
-        if (next[j] === prev[j])
-          continue
-
-        for (; j < prev.length; j++) {
-          setOutput(text => text.slice(0, -1))
-          await wait(150)
-        }
-      }
-
-      for (let j = 0; j < next.length; j++) {
-        if (next[j] === prev[j])
-          continue
-
-        for (; j < next.length; j++) {
-          setOutput(text => text + next[j])
-          await wait(150)
-        }
-      }
-
-      await wait(3000)
-    }
-  }, [])
-
-  const once = useRef(false)
-
-  useEffect(() => {
-    if (once.current)
-      return
-    once.current = true
-
-    write().catch(console.error)
-  }, [])
+  const display = useWriter(sentences)
 
   return <div id="root" className="p-safe h-full w-full flex flex-col overflow-y-scroll animate-opacity-in">
     <Head>
@@ -149,7 +165,7 @@ export function Page() {
       <div className="h-[max(24rem,100dvh_-_16rem)] flex-none flex flex-col items-center">
         <div className="grow" />
         <h1 className="text-center text-6xl font-medium">
-          {output}
+          {display}
         </h1>
         <div className="h-4" />
         <div className="text-center text-default-contrast text-2xl">
