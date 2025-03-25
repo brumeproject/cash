@@ -3,6 +3,11 @@ export class UIError extends Error {
   readonly name = this.#class.name
 }
 
+export class NotAnError extends Error {
+  readonly #class = NotAnError
+  readonly name = this.#class.name
+}
+
 export namespace Errors {
 
   export function toJSON(error: unknown): unknown {
@@ -20,10 +25,14 @@ export namespace Errors {
   }
 
   export function log(error: unknown) {
+    if (error instanceof NotAnError)
+      return
     console.error({ error })
   }
 
   export function alert(error: unknown) {
+    if (error instanceof NotAnError)
+      return
     return globalThis.alert(toString(error))
   }
 

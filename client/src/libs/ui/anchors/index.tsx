@@ -27,6 +27,18 @@ export function ClickableOppositeAnchor(props: ChildrenProps & AnchorProps & { "
   </a>
 }
 
+export function ClickableContrastAnchor(props: ChildrenProps & AnchorProps & { "aria-disabled"?: Booleanish }) {
+  const { children, "aria-disabled": disabled = false, ...rest } = props
+
+  return <a className="group po-2 bg-default-contrast rounded-xl outline-none aria-[disabled=false]:hover:bg-default-double-contrast focus-visible:outline-default-contrast aria-disabled:opacity-50 transition-opacity"
+    aria-disabled={disabled}
+    {...rest}>
+    <GapperAndClickerInAnchorDiv>
+      {children}
+    </GapperAndClickerInAnchorDiv>
+  </a>
+}
+
 export function GapperAndClickerInAnchorDiv(props: ChildrenProps) {
   const { children } = props
 

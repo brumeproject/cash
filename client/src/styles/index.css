@@ -1,17 +1,12 @@
 @import "../../node_modules/@hazae41/labase/src/index.css";
 
-.bg-white-half-gradient {
-  background: linear-gradient(
-      to bottom,
-      rgba(255, 255, 255, 0) 0%,    /* fully transparent at top */
-      rgba(255, 255, 255, 1) 50%   /* fully opaque at bottom */
-  );
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
-.bg-black-half-gradient {
-  background: linear-gradient(
-      to bottom,
-      rgba(0, 0, 0, 0) 0%,    /* fully transparent at top */
-      rgba(0, 0, 0, 1) 50%   /* fully opaque at bottom */
-  );
+/* Firefox */
+input[type=number] {
+  -moz-appearance: textfield;
 }
