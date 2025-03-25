@@ -262,7 +262,8 @@ function Console() {
           <div className="h-2" />
           <label className="flex items-center justify-between bg-default-contrast rounded-xl po-2">
             {Locale.get(Locale.Value, locale)}
-            <input type="number" className="outline-none text-right"
+            <input type="number" className="outline-none"
+              dir="ltr"
               onChange={onMinimumChange}
               value={minimum} />
           </label>
