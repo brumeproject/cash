@@ -9,7 +9,7 @@ import { recoverMessageAddress } from "viem";
 const supabase = createClient<Database>("https://vqceovbkcavejkqyqbqd.supabase.co", process.env.SUPABASE_KEY!)
 
 /* 
-create or replace function mint(
+create or replace function generate(
     address text,
     amount numeric,
     nonce text,
@@ -18,22 +18,22 @@ create or replace function mint(
 begin
     if exists (
         select 1 
-        from mints 
-        where mints.address = mint.address 
-        and mints.nonce = mint.nonce
+        from transactions 
+        where transactions.type = 'generate'
+        and transactions.receiver = generate.address 
+        and transactions.data ->> nonce = generate.nonce
     ) then
         raise exception 'Nonce replayed';
     end if;
 
-    insert into balances (address, balance)
-    values (mint.address, mint.amount)
-    on conflict on constraint balances_pkey
+    insert into accounts (address, balance)
+    values (generate.address, generate.amount)
+    on conflict on constraint accounts_pkey
     do update set
-        balance = balances.balance + mint.amount,
-        updated_at = current_timestamp;
+        balance = accounts.balance + generate.amount;
 
-    insert into mints (address, amount, nonce, secrets)
-    values (mint.address, mint.amount, mint.nonce, mint.secrets);
+    insert into transactions (type, receiver, amount, data)
+    values ('generate', generate.address, generate.amount, jsonb_build_object('nonce', generate.nonce, 'secrets', generate.secrets));
 end;
 $$ language plpgsql;
 */
@@ -84,7 +84,7 @@ export default async function handler(
       const nonce = nonceZeroHex
       const secrets = secretsZeroHex
 
-      const { error } = await supabase.rpc("mint", { address, amount, nonce, secrets })
+      const { error } = await supabase.rpc("generate", { address, amount, nonce, secrets })
 
       if (error != null)
         throw new Error("Database error", { cause: error.message })

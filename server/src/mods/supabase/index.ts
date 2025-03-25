@@ -34,6 +34,21 @@ export type Database = {
   }
   public: {
     Tables: {
+      accounts: {
+        Row: {
+          address: string
+          balance: string
+        }
+        Insert: {
+          address: string
+          balance: string
+        }
+        Update: {
+          address?: string
+          balance?: string
+        }
+        Relationships: []
+      }
       balances: {
         Row: {
           address: string
@@ -79,11 +94,50 @@ export type Database = {
         }
         Relationships: []
       }
+      transactions: {
+        Row: {
+          amount: string | null
+          data: Json | null
+          id: string
+          receiver: string | null
+          sender: string | null
+          time: string
+          type: string
+        }
+        Insert: {
+          amount?: string | null
+          data?: Json | null
+          id?: string
+          receiver?: string | null
+          sender?: string | null
+          time?: string
+          type: string
+        }
+        Update: {
+          amount?: string | null
+          data?: Json | null
+          id?: string
+          receiver?: string | null
+          sender?: string | null
+          time?: string
+          type?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      generate: {
+        Args: {
+          address: string
+          amount: string
+          nonce: string
+          secrets: string
+        }
+        Returns: undefined
+      }
       mint:
       | {
         Args: {
