@@ -4,10 +4,11 @@ import { ClickableOppositeAnchor, TextAnchor } from "@/libs/ui/anchors";
 import { ClickableOppositeButton } from "@/libs/ui/buttons";
 import { Dialog } from "@/libs/ui/dialog";
 import { Loading } from "@/libs/ui/loading";
+import { useWriter } from "@/libs/writer";
 import { HashSubpathProvider, useHashSubpath, usePathContext } from "@hazae41/chemin";
 import { NetWorker } from "@hazae41/networker";
 import Head from "next/head";
-import { EffectCallback, Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useMemo, useState } from "react";
 import { bytesToHex } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { Locale } from "../locale";
@@ -17,65 +18,6 @@ const account = privateKeyToAccount(generatePrivateKey())
 
 const contractZeroHex = "0xabc755011B810fDC31F3504f0F855cadFcb2685A".toLowerCase()
 const receiverZeroHex = account.address.toLowerCase()
-
-async function wait(delay: number) {
-  await new Promise(ok => setTimeout(ok, delay))
-}
-
-export async function* write(list: string[]) {
-  for (let i = 0; true; i = (i + 1) % list.length) {
-    const prev = list[i % list.length]
-    const next = list[(i + 1) % list.length]
-
-    for (let j = 0; j < prev.length; j++) {
-      if (next[j] === prev[j])
-        continue
-
-      for (; j < prev.length; j++) {
-        yield (text: string) => text.slice(0, -1)
-
-        await wait(150)
-      }
-    }
-
-    for (let j = 0; j < next.length; j++) {
-      if (next[j] === prev[j])
-        continue
-
-      for (; j < next.length; j++) {
-        yield (text: string) => text + next[j]
-
-        await wait(150)
-      }
-    }
-
-    await wait(3000)
-  }
-}
-
-export function useOnce(effect: EffectCallback) {
-  const once = useRef(false)
-
-  useEffect(() => {
-    if (once.current)
-      return
-    once.current = true
-
-    return effect()
-  }, [])
-}
-
-export function useWriter(list: string[]) {
-  const [output, setOutput] = useState(list[0])
-
-  const writeAndOutput = useCallback(async () => {
-    for await (const action of write(list)) setOutput(action)
-  }, [])
-
-  useOnce(() => void writeAndOutput().catch(console.error))
-
-  return output
-}
 
 export function Page() {
   const path = usePathContext().getOrThrow()
