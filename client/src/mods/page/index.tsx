@@ -12,7 +12,6 @@ import { ChangeEvent, Fragment, useCallback, useMemo, useState } from "react";
 import { bytesToHex } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { Locale } from "../locale";
-import { Localized } from "../locale/mods";
 import { useLocaleContext } from "../locale/mods/context";
 
 const account = privateKeyToAccount(generatePrivateKey())
@@ -107,39 +106,6 @@ function Console() {
       }
     }
   }), [aborter, loop, minimum])
-
-  const Settings: Localized<string> = {
-    en: "Settings",
-    zh: "设置",
-    hi: "सेटिंग्स",
-    es: "Configuración",
-    ar: "الإعدادات",
-    fr: "Paramètres",
-    de: "Einstellungen",
-    ru: "Настройки",
-    pt: "Configurações",
-    ja: "設定",
-    pa: "ਸੈਟਿੰਗਾਂ",
-    bn: "সেটিংস",
-    id: "Pengaturan",
-    ur: "ترتیبات",
-    ms: "Tetapan",
-    it: "Impostazioni",
-    tr: "Ayarlar",
-    ta: "அமைப்புகள்",
-    te: "అమరికలు",
-    ko: "설정",
-    vi: "Cài đặt",
-    pl: "Ustawienia",
-    ro: "Setări",
-    nl: "Instellingen",
-    el: "Ρυθμίσεις",
-    th: "การตั้งค่า",
-    cs: "Nastavení",
-    hu: "Beállítások",
-    sv: "Inställningar",
-    da: "Indstillinger",
-  }
 
   return <>
     <HashSubpathProvider>
