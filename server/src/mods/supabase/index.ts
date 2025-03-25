@@ -49,51 +49,6 @@ export type Database = {
         }
         Relationships: []
       }
-      balances: {
-        Row: {
-          address: string
-          balance: string
-          updated_at: string
-        }
-        Insert: {
-          address: string
-          balance: string
-          updated_at?: string
-        }
-        Update: {
-          address?: string
-          balance?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      mints: {
-        Row: {
-          address: string
-          amount: string
-          created_at: string
-          id: string
-          nonce: string
-          secrets: string
-        }
-        Insert: {
-          address: string
-          amount: string
-          created_at?: string
-          id?: string
-          nonce: string
-          secrets: string
-        }
-        Update: {
-          address?: string
-          amount?: string
-          created_at?: string
-          id?: string
-          nonce?: string
-          secrets?: string
-        }
-        Relationships: []
-      }
       transactions: {
         Row: {
           amount: string | null
