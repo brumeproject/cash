@@ -11,31 +11,31 @@ const supabase = createClient<Database>("https://vqceovbkcavejkqyqbqd.supabase.c
 /* 
 create or replace function generate(
     address text,
-    value numeric,
-    count numeric,
+    value numeric(32,0),
+    count numeric(32,0),
     nonce text,
     secrets text
 ) returns void as $$
 declare
-    pre_total_value numeric;
-    pre_total_count numeric;
-    new_total_value numeric;
-    new_total_count numeric;
-    average numeric;
-    derived numeric;
+    pre_total_value numeric(32,0);
+    pre_total_count numeric(32,0);
+    new_total_value numeric(32,0);
+    new_total_count numeric(32,0);
+    average numeric(32,0);
+    derived numeric(32,0);
 begin
     if exists (
         select 1 
-        from transactions 
-        where transactions.type = 'generate'
-        and transactions.receiver = generate.address 
-        and transactions.data ->> nonce = generate.nonce
+        from events 
+        where events.type = 'generate'
+        and events.data ->> address = generate.address 
+        and events.data ->> nonce = generate.nonce
     ) then
         raise exception 'Nonce replayed';
     end if;
 
-    pre_total_value := (SELECT meta.value::numeric FROM meta WHERE key = 'total_value');
-    pre_total_count := (SELECT meta.value::numeric FROM meta WHERE key = 'total_count');
+    pre_total_value := (SELECT meta.value::numeric(32,0) FROM meta WHERE key = 'total_value');
+    pre_total_count := (SELECT meta.value::numeric(32,0) FROM meta WHERE key = 'total_count');
 
     average := pre_total_value / pre_total_count;
 
@@ -50,10 +50,10 @@ begin
     end if;
 
     insert into accounts (address, balance)
-    values (generate.address, derived)
+    values (generate.address, to_jsonb(derived))
     on conflict on constraint accounts_pkey
     do update set
-        balance = accounts.balance + derived;
+        balance = to_jsonb(accounts.balance::numeric(32,0) + derived);
 
     new_total_value := pre_total_value + generate.value;
     new_total_count := pre_total_count + generate.count;
