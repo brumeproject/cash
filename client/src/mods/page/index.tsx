@@ -16,9 +16,6 @@ import { useLocaleContext } from "../locale/mods/context";
 
 const account = privateKeyToAccount(generatePrivateKey())
 
-const contractZeroHex = "0xabc755011B810fDC31F3504f0F855cadFcb2685A".toLowerCase()
-const receiverZeroHex = account.address.toLowerCase()
-
 function Console() {
   const path = usePathContext().getOrThrow()
   const locale = useLocaleContext().getOrThrow()
@@ -45,6 +42,9 @@ function Console() {
   const generateAndStop = useCallback(async (minimum: bigint, signal: AbortSignal) => {
     if (worker == null)
       throw new UIError("Worker not ready")
+
+    const contractZeroHex = "0xabc755011B810fDC31F3504f0F855cadFcb2685A".toLowerCase()
+    const receiverZeroHex = account.address.toLowerCase()
 
     const nonceBytes = crypto.getRandomValues(new Uint8Array(32))
     const nonceZeroHex = bytesToHex(nonceBytes)
@@ -94,6 +94,9 @@ function Console() {
   const generateAndLoop = useCallback(async (minimum: bigint, signal: AbortSignal) => {
     if (worker == null)
       throw new UIError("Worker not ready")
+
+    const contractZeroHex = "0xabc755011B810fDC31F3504f0F855cadFcb2685A".toLowerCase()
+    const receiverZeroHex = account.address.toLowerCase()
 
     while (!signal.aborted) {
       const nonceBytes = crypto.getRandomValues(new Uint8Array(32))
