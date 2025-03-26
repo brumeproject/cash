@@ -49,6 +49,21 @@ export type Database = {
         }
         Relationships: []
       }
+      meta: {
+        Row: {
+          key: string
+          value: Json
+        }
+        Insert: {
+          key: string
+          value: Json
+        }
+        Update: {
+          key?: string
+          value?: Json
+        }
+        Relationships: []
+      }
       transactions: {
         Row: {
           amount: string | null
@@ -87,24 +102,8 @@ export type Database = {
       generate: {
         Args: {
           address: string
-          amount: string
-          nonce: string
-          secrets: string
-        }
-        Returns: undefined
-      }
-      mint:
-      | {
-        Args: {
-          address: string
-          amount: string
-        }
-        Returns: undefined
-      }
-      | {
-        Args: {
-          address: string
-          amount: string
+          value: string
+          count: string
           nonce: string
           secrets: string
         }
