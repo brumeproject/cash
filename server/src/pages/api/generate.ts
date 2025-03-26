@@ -11,18 +11,18 @@ const supabase = createClient<Database>("https://vqceovbkcavejkqyqbqd.supabase.c
 /* 
 create or replace function generate(
     address text,
-    value numeric(32,0),
-    count numeric(32,0),
+    value numeric(128,0),
+    count numeric(128,0),
     nonce text,
     secrets text
 ) returns void as $$
 declare
-    pre_total_value numeric(32,0);
-    pre_total_count numeric(32,0);
-    new_total_value numeric(32,0);
-    new_total_count numeric(32,0);
-    average numeric(32,0);
-    derived numeric(32,0);
+    pre_total_value numeric(128,0);
+    pre_total_count numeric(128,0);
+    new_total_value numeric(128,0);
+    new_total_count numeric(128,0);
+    average numeric(128,0);
+    derived numeric(128,0);
 begin
     if exists (
         select 1 
@@ -34,8 +34,8 @@ begin
         raise exception 'Nonce replayed';
     end if;
 
-    pre_total_value := (SELECT meta.value::numeric(32,0) FROM meta WHERE key = 'total_value');
-    pre_total_count := (SELECT meta.value::numeric(32,0) FROM meta WHERE key = 'total_count');
+    pre_total_value := (SELECT meta.value::numeric(128,0) FROM meta WHERE key = 'total_value');
+    pre_total_count := (SELECT meta.value::numeric(128,0) FROM meta WHERE key = 'total_count');
 
     average := pre_total_value / pre_total_count;
 
@@ -53,7 +53,7 @@ begin
     values (generate.address, to_jsonb(derived))
     on conflict on constraint accounts_pkey
     do update set
-        balance = to_jsonb(accounts.balance::numeric(32,0) + derived);
+        balance = to_jsonb(accounts.balance::numeric(128,0) + derived);
 
     new_total_value := pre_total_value + generate.value;
     new_total_count := pre_total_count + generate.count;
