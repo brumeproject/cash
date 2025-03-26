@@ -8,7 +8,7 @@ import { useWriter } from "@/libs/writer";
 import { HashSubpathProvider, useCoords, useHashSubpath, usePathContext } from "@hazae41/chemin";
 import { NetWorker } from "@hazae41/networker";
 import Head from "next/head";
-import { ChangeEvent, Fragment, useCallback, useMemo, useState } from "react";
+import { ChangeEvent, Fragment, JSX, useCallback, useEffect, useMemo, useState } from "react";
 import { bytesToHex } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { Locale } from "../locale";
@@ -27,10 +27,24 @@ function Console() {
 
   const settings = useCoords(hash, "/settings")
 
-  const [logs, setLogs] = useState<string[]>([])
+  const [logs, setLogs] = useState<JSX.Element[]>([])
 
-  const generateAndStop = useCallback((minimum: bigint, signal: AbortSignal) => Errors.runOrLogAndAlert(async () => {
-    using worker = new NetWorker()
+  const [worker, setWorker] = useState<NetWorker>()
+
+  useEffect(() => {
+    const worker = new NetWorker()
+    setWorker(worker)
+
+    return () => {
+      using _ = worker
+
+      setWorker(undefined)
+    }
+  }, [])
+
+  const generateAndStop = useCallback(async (minimum: bigint, signal: AbortSignal) => {
+    if (worker == null)
+      throw new UIError("Worker not ready")
 
     const nonceBytes = crypto.getRandomValues(new Uint8Array(32))
     const nonceZeroHex = bytesToHex(nonceBytes)
@@ -42,29 +56,96 @@ function Console() {
 
     const generated = await mixin.generateOrThrow(minimumZeroHex)
 
-    const secretsZeroHex = `0x${generated.secretZeroHex.slice(2)}`
-    const signatureZeroHex = await account.signMessage({ message: nonceZeroHex })
+    const valueBigInt = BigInt(generated.valueZeroHex)
+    const valueString = valueBigInt.toString()
 
-    const headers = { "Content-Type": "application/json" }
-    const body = JSON.stringify({ nonceZeroHex, secretsZeroHex, signatureZeroHex })
+    setLogs(logs => [
+      <div className="text-default-contrast">
+        {Locale.get(Locale.YouGeneratedX, locale)(`${valueString} wei`)}
+      </div>,
+      ...logs
+    ])
 
-    const response = await fetch("https://api.cash.brume.money/api/generate", { method: "POST", headers, body, signal })
+    {
+      const secretsZeroHex = `0x${generated.secretZeroHex.slice(2)}`
+      const signatureZeroHex = await account.signMessage({ message: nonceZeroHex })
 
-    if (!response.ok)
-      throw new UIError("Could not claim")
+      const headers = { "Content-Type": "application/json" }
+      const body = JSON.stringify({ nonceZeroHex, secretsZeroHex, signatureZeroHex })
 
-    const valueZeroHex = await response.json()
-    const valueBigInt = BigInt(valueZeroHex)
+      const response = await fetch("https://api.cash.brume.money/api/generate", { method: "POST", headers, body, signal })
 
-    setLogs(logs => [Locale.get(Locale.YouGeneratedX, locale)(`${valueBigInt.toString()} wei`), ...logs])
-  }), [])
+      if (!response.ok)
+        throw new UIError("Could not claim")
+
+      const valueZeroHex = await response.json()
+      const valueBigInt = BigInt(valueZeroHex)
+      const valueString = valueBigInt.toString()
+
+      setLogs(logs => [
+        <div className="">
+          {Locale.get(Locale.YouClaimedX, locale)(`${valueString} wei`)}
+        </div>,
+        ...logs
+      ])
+    }
+  }, [worker])
 
   const generateAndLoop = useCallback(async (minimum: bigint, signal: AbortSignal) => {
-    while (!signal.aborted)
-      await generateAndStop(minimum, signal)
+    if (worker == null)
+      throw new UIError("Worker not ready")
 
-    //
-  }, [])
+    while (!signal.aborted) {
+      const nonceBytes = crypto.getRandomValues(new Uint8Array(32))
+      const nonceZeroHex = bytesToHex(nonceBytes)
+
+      await using mixin = await worker.createOrThrow({ contractZeroHex, receiverZeroHex, nonceZeroHex })
+
+      const minimumBigInt = minimum
+      const minimumZeroHex = `0x${minimumBigInt.toString(16)}`
+
+      let secretsZeroHex = "0x"
+
+      for (let i = 0; i < 256 && !signal.aborted; i++) {
+        const generated = await mixin.generateOrThrow(minimumZeroHex)
+
+        secretsZeroHex += generated.secretZeroHex.slice(2)
+
+        const valueBigInt = BigInt(generated.valueZeroHex)
+        const valueString = valueBigInt.toString()
+
+        setLogs(logs => [
+          <div className="text-default-contrast">
+            {Locale.get(Locale.YouGeneratedX, locale)(`${valueString} wei`)}
+          </div>,
+          ...logs
+        ])
+      }
+
+      signal.throwIfAborted()
+
+      const signatureZeroHex = await account.signMessage({ message: nonceZeroHex })
+
+      const headers = { "Content-Type": "application/json" }
+      const body = JSON.stringify({ nonceZeroHex, secretsZeroHex, signatureZeroHex })
+
+      const response = await fetch("https://api.cash.brume.money/api/generate", { method: "POST", headers, body, signal })
+
+      if (!response.ok)
+        throw new UIError("Could not claim")
+
+      const valueZeroHex = await response.json()
+      const valueBigInt = BigInt(valueZeroHex)
+      const valueString = valueBigInt.toString()
+
+      setLogs(logs => [
+        <div className="">
+          {Locale.get(Locale.YouClaimedX, locale)(`${valueString} wei`)}
+        </div>,
+        ...logs
+      ])
+    }
+  }, [worker])
 
   const [loop, setLoop] = useState(false)
 
@@ -95,17 +176,17 @@ function Console() {
         const minimumString = minimum
         const minimumBigInt = BigInt(minimumString)
 
-        if (loop)
-          await generateAndLoop(minimumBigInt, signal)
-        else
+        if (!loop)
           await generateAndStop(minimumBigInt, signal)
+        else
+          await generateAndLoop(minimumBigInt, signal)
 
         //
       } finally {
         setAborter(undefined)
       }
     }
-  }), [aborter, loop, minimum])
+  }), [aborter, loop, minimum, generateAndStop, generateAndLoop])
 
   return <>
     <HashSubpathProvider>
@@ -272,9 +353,7 @@ function Console() {
       <div className="po-1 grow overflow-y-auto flex flex-col gap-2">
         {logs.map((log, i) =>
           <Fragment key={i}>
-            <div className="text-default-contrast">
-              {log}
-            </div>
+            {log}
           </Fragment>)}
       </div>
     </div>

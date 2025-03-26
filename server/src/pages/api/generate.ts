@@ -54,6 +54,9 @@ export default async function handler(
   const secretsZeroHex = z.string().asOrThrow(req.body.secretsZeroHex).toLowerCase()
   const signatureZeroHex = z.string().asOrThrow(req.body.signatureZeroHex).toLowerCase()
 
+  if (secretsZeroHex.length > (2 + (64 * 256)))
+    throw new Error("Too many secrets")
+
   const receiverZeroHex = await recoverMessageAddress({ message: nonceZeroHex, signature: signatureZeroHex as `0x${string}` }).then(x => x.toLowerCase())
 
   {
