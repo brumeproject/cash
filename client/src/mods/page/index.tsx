@@ -106,7 +106,7 @@ function Console() {
 
       let secretsZeroHex = "0x"
 
-      for (let i = 0; i < 256 && !signal.aborted; i++) {
+      for (let i = 0; i < 1024 && !signal.aborted; i++) {
         const generated = await mixin.generateOrThrow(minimumZeroHex)
 
         secretsZeroHex += generated.secretZeroHex.slice(2)
