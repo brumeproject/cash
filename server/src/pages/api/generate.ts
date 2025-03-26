@@ -66,8 +66,8 @@ begin
     set value = to_jsonb(new_total_count)
     where key = 'total_count';
 
-    insert into transactions (type, receiver, amount, data)
-    values ('generate', generate.address, generate.value, jsonb_build_object('nonce', generate.nonce, 'secrets', generate.secrets));
+    insert into events (type, data)
+    values ('generate', jsonb_build_object('address', generate.address, 'value', generate.value, 'count', generate.count, 'nonce', generate.nonce, 'secrets', generate.secrets));
 end;
 $$ language plpgsql;
 */
