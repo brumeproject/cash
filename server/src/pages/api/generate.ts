@@ -11,18 +11,16 @@ const supabase = createClient<Database>("https://vqceovbkcavejkqyqbqd.supabase.c
 /* 
 create or replace function generate(
     address text,
-    value numeric(128,0),
-    count numeric(128,0),
+    value numeric,
+    count numeric,
     nonce text,
     secrets text
 ) returns void as $$
 declare
-    pre_total_value numeric(128,0);
-    pre_total_count numeric(128,0);
-    new_total_value numeric(128,0);
-    new_total_count numeric(128,0);
-    average numeric(128,0);
-    derived numeric(128,0);
+    total_value numeric;
+    total_count numeric;
+    average numeric;
+    derived numeric;
 begin
     if exists (
         select 1 
@@ -34,37 +32,27 @@ begin
         raise exception 'Nonce replayed';
     end if;
 
-    pre_total_value := (SELECT meta.value::numeric(128,0) FROM meta WHERE key = 'total_value');
-    pre_total_count := (SELECT meta.value::numeric(128,0) FROM meta WHERE key = 'total_count');
+    total_value := coalesce((select meta.value::numeric from meta where key = 'total_value'), 0) + generate.value;
+    total_count := coalesce((select meta.value::numeric from meta where key = 'total_count'), 0) + generate.count;
 
-    average := pre_total_value / pre_total_count;
+    insert into meta (key, value)
+    values ('total_value', to_jsonb(total_value))
+    on conflict on constraint meta_pkey
+    do update set value = to_jsonb(total_value);
 
-    if (average < 1000) then
-        average := 1000;
-    end if;
+    insert into meta (key, value)
+    values ('total_count', to_jsonb(total_count))
+    on conflict on constraint meta_pkey
+    do update set value = to_jsonb(total_count);
 
-    derived := generate.value / (average / 1000);
-
-    if (derived > 1000000) then
-        derived := 1000000;
-    end if;
+    average := total_value / total_count;
+    derived := generate.value / average;
 
     insert into accounts (address, balance)
     values (generate.address, to_jsonb(derived))
     on conflict on constraint accounts_pkey
     do update set
-        balance = to_jsonb(accounts.balance::numeric(128,0) + derived);
-
-    new_total_value := pre_total_value + generate.value;
-    new_total_count := pre_total_count + generate.count;
-
-    update meta 
-    set value = to_jsonb(new_total_value)
-    where key = 'total_value';
-
-    update meta 
-    set value = to_jsonb(new_total_count)
-    where key = 'total_count';
+        balance = to_jsonb(accounts.balance::numeric + derived);
 
     insert into events (type, data)
     values ('generate', jsonb_build_object('address', generate.address, 'value', generate.value, 'count', generate.count, 'nonce', generate.nonce, 'secrets', generate.secrets));
