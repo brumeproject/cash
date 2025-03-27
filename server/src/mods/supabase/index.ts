@@ -37,60 +37,51 @@ export type Database = {
       accounts: {
         Row: {
           address: string
-          balance: string
+          balance: Json
         }
         Insert: {
           address: string
-          balance: string
+          balance: Json
         }
         Update: {
           address?: string
-          balance?: string
+          balance?: Json
+        }
+        Relationships: []
+      }
+      events: {
+        Row: {
+          data: Json | null
+          id: string
+          time: string
+          type: string
+        }
+        Insert: {
+          data?: Json | null
+          id?: string
+          time?: string
+          type: string
+        }
+        Update: {
+          data?: Json | null
+          id?: string
+          time?: string
+          type?: string
         }
         Relationships: []
       }
       meta: {
         Row: {
           key: string
-          value: Json
+          value: Json | null
         }
         Insert: {
           key: string
-          value: Json
+          value?: Json | null
         }
         Update: {
           key?: string
-          value?: Json
-        }
-        Relationships: []
-      }
-      transactions: {
-        Row: {
-          amount: string | null
-          data: Json | null
-          id: string
-          receiver: string | null
-          sender: string | null
-          time: string
-          type: string
-        }
-        Insert: {
-          amount?: string | null
-          data?: Json | null
-          id?: string
-          receiver?: string | null
-          sender?: string | null
-          time?: string
-          type: string
-        }
-        Update: {
-          amount?: string | null
-          data?: Json | null
-          id?: string
-          receiver?: string | null
-          sender?: string | null
-          time?: string
-          type?: string
+          value?: Json | null
         }
         Relationships: []
       }
@@ -107,11 +98,11 @@ export type Database = {
           nonce: string
           secrets: string
         }
-        Returns: undefined
+        Returns: string
       }
     }
     Enums: {
-      [_ in never]: never
+      u256: "numeric(32,0)"
     }
     CompositeTypes: {
       [_ in never]: never

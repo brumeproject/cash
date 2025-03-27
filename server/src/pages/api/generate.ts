@@ -15,7 +15,7 @@ create or replace function generate(
     count numeric,
     nonce text,
     secrets text
-) returns void as $$
+) returns numeric as $$
 declare
     total_value numeric;
     total_count numeric;
@@ -56,6 +56,8 @@ begin
 
     insert into events (type, data)
     values ('generate', jsonb_build_object('address', generate.address, 'value', generate.value, 'count', generate.count, 'nonce', generate.nonce, 'secrets', generate.secrets));
+    
+    return derived;
 end;
 $$ language plpgsql;
 */
@@ -113,12 +115,12 @@ export default async function handler(
       const nonce = nonceZeroHex
       const secrets = secretsZeroHex
 
-      const { error } = await supabase.rpc("generate", { address, value, count, nonce, secrets })
+      const { data, error } = await supabase.rpc("generate", { address, value, count, nonce, secrets })
 
       if (error != null)
         throw new Error("Database error", { cause: error.message })
 
-      res.status(200).setHeaders(headers).json(valueZeroHex);
+      res.status(200).setHeaders(headers).json(data);
     }
   }
 }

@@ -61,7 +61,7 @@ function Console() {
 
     setLogs(logs => [
       <div className="text-default-contrast">
-        {Locale.get(Locale.YouGeneratedX, locale)(`${valueString} wei`)}
+        {Locale.get(Locale.YouGeneratedX, locale)(`${valueString} sparks`)}
       </div>,
       ...logs
     ])
@@ -73,18 +73,16 @@ function Console() {
       const headers = { "Content-Type": "application/json" }
       const body = JSON.stringify({ nonceZeroHex, secretsZeroHex, signatureZeroHex })
 
-      const response = await fetch("https://api.cash.brume.money/api/generate", { method: "POST", headers, body, signal })
+      const response = await fetch("http://localhost:3001/api/generate", { method: "POST", headers, body, signal })
 
       if (!response.ok)
         throw new UIError("Could not claim")
 
-      const valueZeroHex = await response.json()
-      const valueBigInt = BigInt(valueZeroHex)
-      const valueString = valueBigInt.toString()
+      const result = await response.json()
 
       setLogs(logs => [
         <div className="">
-          {Locale.get(Locale.YouClaimedX, locale)(`${valueString} wei`)}
+          {Locale.get(Locale.YouEarnedX, locale)(`${result} tokens`)}
         </div>,
         ...logs
       ])
@@ -119,7 +117,7 @@ function Console() {
 
         setLogs(logs => [
           <div className="text-default-contrast">
-            {Locale.get(Locale.YouGeneratedX, locale)(`${valueString} wei`)}
+            {Locale.get(Locale.YouGeneratedX, locale)(`${valueString} sparks`)}
           </div>,
           ...logs
         ])
@@ -137,13 +135,11 @@ function Console() {
       if (!response.ok)
         throw new UIError("Could not claim")
 
-      const valueZeroHex = await response.json()
-      const valueBigInt = BigInt(valueZeroHex)
-      const valueString = valueBigInt.toString()
+      const result = await response.json()
 
       setLogs(logs => [
         <div className="">
-          {Locale.get(Locale.YouClaimedX, locale)(`${valueString} wei`)}
+          {Locale.get(Locale.YouEarnedX, locale)(`${result} tokens`)}
         </div>,
         ...logs
       ])
@@ -192,6 +188,44 @@ function Console() {
   }), [aborter, loop, minimum, generateAndStop, generateAndLoop])
 
   return <>
+    <h1 className="text-2xl font-medium">
+      {Locale.get(Locale.SuperGenerator2048, locale)}
+    </h1>
+    <div className="text-default-contrast">
+      {Locale.get({
+        en: `Generate sparks and claim tokens`,
+        zh: `生成火花并索取代币`,
+        hi: `बिजली उत्पन्न करें और टोकन का दावा करें`,
+        es: `Genere chispas y reclame tokens`,
+        ar: `توليد الشرر والمطالبة بالرموز`,
+        fr: `Générez des étincelles et réclamez des jetons`,
+        de: `Generieren Sie Funken und fordern Sie Token an`,
+        ru: `Генерируйте искры и требуйте токены`,
+        pt: `Gere faíscas e reivindique tokens`,
+        ja: `スパークを生成してトークンを請求する`,
+        pa: `ਸਪਾਰਕ ਉਤਪਾਦਿਤ ਕਰੋ ਅਤੇ ਟੋਕਨ ਦਾਵਾ ਕਰੋ`,
+        bn: `স্পার্ক উৎপাদন করুন এবং টোকেন দাবি করুন`,
+        id: `Hasilkan percikan dan klaim token`,
+        ur: `سپارک جنریٹ کریں اور ٹوکن کا دعویٰ کریں`,
+        ms: `Hasilkan percikan dan tuntut token`,
+        it: `Genera scintille e richiedi token`,
+        tr: `Kıvılcım üretin ve jetonları talep edin`,
+        ta: `விழுந்து உருவாக்குகிறது மற்றும் டோக்கன்களை கோருங்கள்`,
+        te: `స్పార్క్స్ ను ఉత్పత్తించండి మరియు టోకెన్లను దావం చేయండి`,
+        ko: `스파크를 생성하고 토큰을 청구하십시오`,
+        vi: `Tạo ra tia lửa và yêu cầu token`,
+        pl: `Generuj iskry i żądaj tokenów`,
+        ro: `Generați scântei și revendicați tokeni`,
+        nl: `Genereer vonken en claim tokens`,
+        el: `Δημιουργήστε αστραπές και απαιτήστε τα token`,
+        th: `สร้างประกายและเรียกร้องโทเค็น`,
+        cs: `Generujte jiskry a požadujte tokeny`,
+        hu: `Szikrákat generáljon és igényeljen tokeneket`,
+        sv: `Generera gnistor och kräv token`,
+        da: `Generer gnister og kræv token`,
+      }, locale)}
+    </div>
+    <div className="h-4" />
     <HashSubpathProvider>
       {hash.url.pathname === "/settings" &&
         <Dialog>
@@ -311,36 +345,36 @@ function Console() {
           </div>
           <div className="text-default-contrast">
             {Locale.get({
-              en: `Minimum wei value of each generation`,
-              zh: `每代的最小 wei 值`,
-              hi: `प्रत्येक पीढ़ी का न्यूनतम wei मूल्य`,
-              es: `Valor mínimo de wei de cada generación`,
-              ar: `القيمة الدنيا لكل جيل`,
-              fr: `Valeur minimale de wei de chaque génération`,
-              de: `Minimaler wei-Wert jeder Generation`,
-              ru: `Минимальное значение wei каждого поколения`,
-              pt: `Valor mínimo de wei de cada geração`,
-              ja: `各世代の最小 wei 値`,
-              pa: `ਹਰ ਪੀੜੀ ਦਾ ਨਿਮਣ ਵੇਵ ਮੁੱਲ`,
-              bn: `প্রতিটি প্রজন্মের ন্যূনতম উই মান`,
-              id: `Nilai wei minimum dari setiap generasi`,
-              ur: `ہر نسل کی کم سے کم وی مقدار`,
-              ms: `Nilai wei minimum setiap generasi`,
-              it: `Valore wei minimo di ogni generazione`,
-              tr: `Her neslin minimum wei değeri`,
-              ta: `ஒவ்வொரு தலைவர்களின் குறைந்த wei மதிப்பு`,
-              te: `ప్రతి పీడని కనిష్ట వి మూల్యం`,
-              ko: `각 세대의 최소 wei 값`,
-              vi: `Giá trị wei tối thiểu của mỗi thế hệ`,
-              pl: `Minimalna wartość wei każdego pokolenia`,
-              ro: `Valoarea minimă wei a fiecărei generații`,
-              nl: `Minimale wei-waarde van elke generatie`,
-              el: `Ελάχιστη τιμή wei κάθε γενιάς`,
-              th: `ค่า wei ต่ำสุดของแต่ละรุ่น`,
-              cs: `Minimální hodnota wei každé generace`,
-              hu: `Minden generáció minimális wei értéke`,
-              sv: `Minsta wei-värde för varje generation`,
-              da: `Minimum wei-værdi for hver generation`,
+              en: `Minimum value to generate`,
+              zh: `生成的最小值`,
+              hi: `निर्माण के लिए न्यूनतम मान`,
+              es: `Valor mínimo a generar`,
+              ar: `القيمة الدنيا للتوليد`,
+              fr: `Valeur minimale à générer`,
+              de: `Minimalwert zum Generieren`,
+              ru: `Минимальное значение для генерации`,
+              pt: `Valor mínimo a gerar`,
+              ja: `生成する最小値`,
+              pa: `ਉਤਪਾਦਿਤ ਕਰਨ ਲਈ ਨਿਮਣ ਮੁੱਲ`,
+              bn: `উৎপাদন করার জন্য ন্যূনতম মান`,
+              id: `Nilai minimum yang akan dihasilkan`,
+              ur: `تولید کرنے کی کم سے کم قیمت`,
+              ms: `Nilai minimum yang akan dihasilkan`,
+              it: `Valore minimo da generare`,
+              tr: `Üretmek için minimum değer`,
+              ta: `உற்பத்திப்படுத்த குறைந்த மதிப்பு`,
+              te: `ఉత్పత్తించడానికి కనిష్ట విలువ`,
+              ko: `생성할 최소 값`,
+              vi: `Giá trị tối thiểu cần tạo`,
+              pl: `Minimalna wartość do wygenerowania`,
+              ro: `Valoare minimă de generat`,
+              nl: `Minimale waarde om te genereren`,
+              el: `Ελάχιστη τιμή για δημιουργία`,
+              th: `ค่าต่ำสุดที่จะสร้าง`,
+              cs: `Minimální hodnota k vygenerování`,
+              hu: `Generálandó minimális érték`,
+              sv: `Minsta värde att generera`,
+              da: `Minimumsværdi at generere`,
             }, locale)}
           </div>
           <div className="h-2" />
