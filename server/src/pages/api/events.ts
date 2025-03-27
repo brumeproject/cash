@@ -31,13 +31,18 @@ export default async function handler(
   const limitString = limit
   const limitNumber = Number(limitString)
 
+  if (limitNumber === 0)
+    return void res.status(400).setHeaders(headers).end()
   if (limitNumber > 2048)
     return void res.status(400).setHeaders(headers).end()
 
   const offsetString = offset
   const offsetNumber = Number(offsetString)
 
-  const absoluteOffsetNumber = offsetNumber < 0 ? ((-offsetNumber) - 1) : offsetNumber
+  if (offsetNumber === 0)
+    return void res.status(400).setHeaders(headers).end()
+
+  const absoluteOffsetNumber = Math.abs(offsetNumber) - 1
 
   const { data, error } = await supabase.from("events").select("*")
     .order("id", { ascending: (offsetNumber >= 0) })
