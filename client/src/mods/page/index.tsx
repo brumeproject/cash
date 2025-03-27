@@ -73,7 +73,7 @@ function Console() {
       const headers = { "Content-Type": "application/json" }
       const body = JSON.stringify({ nonceZeroHex, secretsZeroHex, signatureZeroHex })
 
-      const response = await fetch("http://localhost:3001/api/generate", { method: "POST", headers, body, signal })
+      const response = await fetch("https://api.cash.brume.money/api/generate", { method: "POST", headers, body, signal })
 
       if (!response.ok)
         throw new UIError("Could not claim")
