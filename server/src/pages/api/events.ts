@@ -31,6 +31,9 @@ export default async function handler(
   const limitString = limit
   const limitNumber = Number(limitString)
 
+  if (limitNumber > 2048)
+    return void res.status(400).setHeaders(headers).end()
+
   const offsetString = offset
   const offsetNumber = Number(offsetString)
 
