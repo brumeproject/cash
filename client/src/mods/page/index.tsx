@@ -39,7 +39,7 @@ function Console() {
     }
   }, [])
 
-  const generateAndStop = useCallback(async (minimum: bigint, signal: AbortSignal) => {
+  const generateAndStop = useCallback(async (size: number, minimum: bigint, signal: AbortSignal) => {
     if (worker == null)
       throw new UIError("Worker not ready")
 
@@ -54,97 +54,49 @@ function Console() {
     const minimumBigInt = minimum
     const minimumZeroHex = `0x${minimumBigInt.toString(16)}`
 
-    const generated = await mixin.generateOrThrow(minimumZeroHex)
+    let secretsZeroHex = "0x"
 
-    const valueBigInt = BigInt(generated.valueZeroHex)
-    const valueString = valueBigInt.toString()
+    for (let i = 0; i < size && !signal.aborted; i++) {
+      const generated = await mixin.generateOrThrow(minimumZeroHex)
+
+      secretsZeroHex += generated.secretZeroHex.slice(2)
+
+      const valueBigInt = BigInt(generated.valueZeroHex)
+      const valueString = valueBigInt.toString()
+
+      setLogs(logs => [
+        <div className="text-default-contrast">
+          {Locale.get(Locale.YouGeneratedX, locale)(`${valueString} sparks`)}
+        </div>,
+        ...logs
+      ])
+    }
+
+    signal.throwIfAborted()
+
+    const signatureZeroHex = await account.signMessage({ message: nonceZeroHex })
+
+    const headers = { "Content-Type": "application/json" }
+    const body = JSON.stringify({ nonceZeroHex, secretsZeroHex, signatureZeroHex })
+
+    const response = await fetch("https://api.cash.brume.money/api/generate", { method: "POST", headers, body, signal })
+
+    if (!response.ok)
+      throw new UIError("Could not claim")
+
+    const result = await response.json()
 
     setLogs(logs => [
-      <div className="text-default-contrast">
-        {Locale.get(Locale.YouGeneratedX, locale)(`${valueString} sparks`)}
+      <div className="">
+        {Locale.get(Locale.YouEarnedX, locale)(`${result} tokens`)}
       </div>,
       ...logs
     ])
-
-    {
-      const secretsZeroHex = `0x${generated.secretZeroHex.slice(2)}`
-      const signatureZeroHex = await account.signMessage({ message: nonceZeroHex })
-
-      const headers = { "Content-Type": "application/json" }
-      const body = JSON.stringify({ nonceZeroHex, secretsZeroHex, signatureZeroHex })
-
-      const response = await fetch("https://api.cash.brume.money/api/generate", { method: "POST", headers, body, signal })
-
-      if (!response.ok)
-        throw new UIError("Could not claim")
-
-      const result = await response.json()
-
-      setLogs(logs => [
-        <div className="">
-          {Locale.get(Locale.YouEarnedX, locale)(`${result} tokens`)}
-        </div>,
-        ...logs
-      ])
-    }
   }, [worker])
 
-  const generateAndLoop = useCallback(async (minimum: bigint, signal: AbortSignal) => {
-    if (worker == null)
-      throw new UIError("Worker not ready")
-
-    const contractZeroHex = "0xabc755011B810fDC31F3504f0F855cadFcb2685A".toLowerCase()
-    const receiverZeroHex = account.address.toLowerCase()
-
-    while (!signal.aborted) {
-      const nonceBytes = crypto.getRandomValues(new Uint8Array(32))
-      const nonceZeroHex = bytesToHex(nonceBytes)
-
-      await using mixin = await worker.createOrThrow({ contractZeroHex, receiverZeroHex, nonceZeroHex })
-
-      const minimumBigInt = minimum
-      const minimumZeroHex = `0x${minimumBigInt.toString(16)}`
-
-      let secretsZeroHex = "0x"
-
-      for (let i = 0; i < 2048 && !signal.aborted; i++) {
-        const generated = await mixin.generateOrThrow(minimumZeroHex)
-
-        secretsZeroHex += generated.secretZeroHex.slice(2)
-
-        const valueBigInt = BigInt(generated.valueZeroHex)
-        const valueString = valueBigInt.toString()
-
-        setLogs(logs => [
-          <div className="text-default-contrast">
-            {Locale.get(Locale.YouGeneratedX, locale)(`${valueString} sparks`)}
-          </div>,
-          ...logs
-        ])
-      }
-
-      signal.throwIfAborted()
-
-      const signatureZeroHex = await account.signMessage({ message: nonceZeroHex })
-
-      const headers = { "Content-Type": "application/json" }
-      const body = JSON.stringify({ nonceZeroHex, secretsZeroHex, signatureZeroHex })
-
-      const response = await fetch("https://api.cash.brume.money/api/generate", { method: "POST", headers, body, signal })
-
-      if (!response.ok)
-        throw new UIError("Could not claim")
-
-      const result = await response.json()
-
-      setLogs(logs => [
-        <div className="">
-          {Locale.get(Locale.YouEarnedX, locale)(`${result} tokens`)}
-        </div>,
-        ...logs
-      ])
-    }
-  }, [worker])
+  const generateAndLoop = useCallback(async (size: number, minimum: bigint, signal: AbortSignal) => {
+    while (!signal.aborted) await generateAndStop(size, minimum, signal)
+  }, [generateAndStop])
 
   const [loop, setLoop] = useState(false)
 
@@ -155,7 +107,25 @@ function Console() {
   const [minimum, setMinimum] = useState("1000000")
 
   const onMinimumChange = useCallback((event: ChangeEvent<HTMLInputElement>) => Errors.runOrLogAndAlert(async () => {
+    const minimumString = event.currentTarget.value
+    const minimumBigInt = BigInt(minimumString)
+
+    if (minimumBigInt < 1n)
+      throw new UIError("Minimum must be greater than or equals to 1")
+
     setMinimum(event.currentTarget.value)
+  }), [])
+
+  const [size, setSize] = useState("32")
+
+  const onSizeChange = useCallback((event: ChangeEvent<HTMLInputElement>) => Errors.runOrLogAndAlert(async () => {
+    const sizeString = event.currentTarget.value
+    const sizeNumber = Number(sizeString)
+
+    if (sizeNumber < 1 || sizeNumber > 2048)
+      throw new UIError("Size must be between 1 and 2048")
+
+    setSize(sizeString)
   }), [])
 
   const [aborter, setAborter] = useState<AbortController>()
@@ -175,17 +145,20 @@ function Console() {
         const minimumString = minimum
         const minimumBigInt = BigInt(minimumString)
 
+        const sizeString = size
+        const sizeNumber = Number(sizeString)
+
         if (!loop)
-          await generateAndStop(minimumBigInt, signal)
+          await generateAndStop(sizeNumber, minimumBigInt, signal)
         else
-          await generateAndLoop(minimumBigInt, signal)
+          await generateAndLoop(sizeNumber, minimumBigInt, signal)
 
         //
       } finally {
         setAborter(undefined)
       }
     }
-  }), [aborter, loop, minimum, generateAndStop, generateAndLoop])
+  }), [aborter, loop, size, minimum, generateAndStop, generateAndLoop])
 
   return <>
     <h1 className="text-2xl font-medium">
@@ -378,11 +351,91 @@ function Console() {
             }, locale)}
           </div>
           <div className="h-2" />
-          <label className="flex items-center justify-between bg-default-contrast rounded-xl po-2">
+          <label className="flex items-center bg-default-contrast rounded-xl po-2 gap-2">
             {Locale.get(Locale.Value, locale)}
+            <div className="text-default-contrast">1 — +∞</div>
+            <div className="grow" />
             <input type="number" className="outline-none text-end"
               onChange={onMinimumChange}
               value={minimum} />
+          </label>
+          <div className="h-4" />
+          <div className="font-medium">
+            {Locale.get({
+              en: "Bucket size",
+              zh: "桶大小",
+              hi: "बाल्टी का आकार",
+              es: "Tamaño del cubo",
+              ar: "حجم الدلو",
+              fr: "Taille du seau",
+              de: "Eimergröße",
+              ru: "Размер ведра",
+              pt: "Tamanho do balde",
+              ja: "バケットサイズ",
+              pa: "ਬਕੈਟ ਦਾ ਆਕਾਰ",
+              bn: "বাল্টির আকার",
+              id: "Ukuran ember",
+              ur: "بکٹ کا سائز",
+              ms: "Saiz baldi",
+              it: "Dimensione del secchio",
+              tr: "Kova boyutu",
+              ta: "குப்பை அளவு",
+              te: "బకెట్ పరిమాణం",
+              ko: "버킷 크기",
+              vi: "Kích thước thùng",
+              pl: "Rozmiar wiadra",
+              ro: "Dimensiunea găleții",
+              nl: "Emmergrootte",
+              el: "Μέγεθος κουβά",
+              th: "ขนาดถัง",
+              cs: "Velikost kyblíku",
+              hu: "Vödör mérete",
+              sv: "Hinkstorlek",
+              da: "Spandstørrelse",
+            }, locale)}
+          </div>
+          <div className="text-default-contrast">
+            {Locale.get({
+              en: `Number of generations before claiming`,
+              zh: `索取前的生成次数`,
+              hi: `दावा करने से पहले पीढ़ी की संख्या`,
+              es: `Número de generaciones antes de reclamar`,
+              ar: `عدد الأجيال قبل المطالبة`,
+              fr: `Nombre de générations avant de réclamer`,
+              de: `Anzahl der Generationen vor dem Anspruch`,
+              ru: `Количество поколений перед требованием`,
+              pt: `Número de gerações antes de reivindicar`,
+              ja: `請求前の世代数`,
+              pa: `ਦਾਵਾ ਕਰਨ ਤੋਂ ਪਹਿਲਾਂ ਪੀੜੀਆਂ ਦੀ ਗਿਣਤੀ`,
+              bn: `দাবি করার আগে প্রজননের সংখ্যা`,
+              id: `Jumlah generasi sebelum klaim`,
+              ur: `دعوہ کرنے سے پہلے نسلوں کی تعداد`,
+              ms: `Bilangan generasi sebelum tuntutan`,
+              it: `Numero di generazioni prima della richiesta`,
+              tr: `Talepten önceki nesil sayısı`,
+              ta: `கோரிக்கை முன்னே தாவரவளவுகளின் எண்ணிக்கை`,
+              te: `దావా చేయడం ముందు పెంపుల సంఖ్య`,
+              ko: `청구 전 세대 수`,
+              vi: `Số thế hệ trước khi yêu cầu`,
+              pl: `Liczba pokoleń przed roszczeniem`,
+              ro: `Numărul de generații înainte de revendicare`,
+              nl: `Aantal generaties voor claimen`,
+              el: `Αριθμός γενεών πριν την απαίτηση`,
+              th: `จำนวนรุ่นก่อนเรียกร้อง`,
+              cs: `Počet generací před nárokem`,
+              hu: `Generációk száma a követelés előtt`,
+              sv: `Antal generationer innan krav`,
+              da: `Antal generationer før krav`,
+            }, locale)}
+          </div>
+          <div className="h-2" />
+          <label className="flex items-center bg-default-contrast rounded-xl po-2 gap-2">
+            {Locale.get(Locale.Value, locale)}
+            <div className="text-default-contrast">1 — 2048</div>
+            <div className="grow" />
+            <input type="number" className="outline-none text-end"
+              onChange={onSizeChange}
+              value={size} />
           </label>
         </Dialog>}
     </HashSubpathProvider>
