@@ -142,7 +142,7 @@ export function WalletDialog() {
 
   useEffect(() => {
     getBalanceOrThrow().catch(Errors.logAndAlert)
-  }, [])
+  }, [account])
 
   return <Dialog>
     <HashSubpathProvider>
