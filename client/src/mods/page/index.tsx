@@ -74,8 +74,6 @@ function Console() {
     }
   }, [])
 
-  console.log(account)
-
   const generateAndStop = useCallback(async (size: number, minimum: bigint, signal: AbortSignal) => {
     if (account == null)
       throw new UIError("Account not ready")
