@@ -466,17 +466,19 @@ function Console() {
           : Locale.get(Locale.Generate, locale)}
       </WideClickableOppositeButton>
       <ClickableContrastAnchor
-        onKeyDown={settings.onKeyDown}
-        onClick={settings.onClick}
-        href={settings.href}>
+        aria-disabled={aborter != null}
+        onKeyDown={aborter == null ? settings.onKeyDown : undefined}
+        onClick={aborter == null ? settings.onClick : undefined}
+        href={aborter == null ? settings.href : undefined}>
         <div className="p-1">
           <Outline.EllipsisVerticalIcon className="size-5" />
         </div>
       </ClickableContrastAnchor>
       <ClickableContrastAnchor
-        onKeyDown={wallet.onKeyDown}
-        onClick={wallet.onClick}
-        href={wallet.href}>
+        aria-disabled={aborter != null}
+        onKeyDown={aborter == null ? wallet.onKeyDown : undefined}
+        onClick={aborter == null ? wallet.onClick : undefined}
+        href={aborter == null ? wallet.href : undefined}>
         <div className="p-1">
           <Outline.WalletIcon className="size-5" />
         </div>
