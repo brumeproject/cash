@@ -105,6 +105,7 @@ export function WalletDialog() {
           <WideClickableContrastButton>
             Browser Extension
           </WideClickableContrastButton>
+          <div className="h-2" />
           <WideClickableContrastButton>
             WalletConnect
           </WideClickableContrastButton>
