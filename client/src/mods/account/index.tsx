@@ -180,7 +180,7 @@ export function WalletDialog() {
     <div className="h-2" />
     <WideClickableContrastButton
       onClick={onImportClick}>
-      Import an existing wallet
+      {Locale.get(Locale.ImportAnExistingWallet, locale)}
     </WideClickableContrastButton>
   </Dialog>
 }
