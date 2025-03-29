@@ -7,14 +7,13 @@ import { Loading } from "@/libs/ui/loading";
 import { useWriter } from "@/libs/writer";
 import { HashSubpathProvider, useCoords, useHashSubpath, usePathContext } from "@hazae41/chemin";
 import { NetWorker } from "@hazae41/networker";
+import { Database } from "@hazae41/serac";
 import Head from "next/head";
 import { ChangeEvent, Fragment, JSX, useCallback, useEffect, useMemo, useState } from "react";
-import { bytesToHex } from "viem";
+import { bytesToHex, Hex, PrivateKeyAccount } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { Locale } from "../locale";
 import { useLocaleContext } from "../locale/mods/context";
-
-const account = privateKeyToAccount(generatePrivateKey())
 
 function Console() {
   const path = usePathContext().getOrThrow()
@@ -23,6 +22,42 @@ function Console() {
   const hash = useHashSubpath(path)
 
   const settings = useCoords(hash, "/settings")
+
+  const [database, setDatabase] = useState<Database>()
+
+  const getAndSetDatabase = useCallback(() => Errors.runOrLogAndAlert(async () => {
+    const database = await Database.openOrThrow("meta", 1, () => { })
+
+    // for await (const key of database.collectOrThrow()) 
+    //   await database.deleteOrThrow(key)
+
+    setDatabase(database)
+  }), [])
+
+  useEffect(() => {
+    getAndSetDatabase()
+  }, [])
+
+  const [account, setAccount] = useState<PrivateKeyAccount>()
+
+  const getAndSetAccount = useCallback((database: Database) => Errors.runOrLogAndAlert(async () => {
+    const stale = await database.getOrThrow<Hex>("account")
+
+    if (stale != null)
+      return void setAccount(privateKeyToAccount(stale))
+
+    const fresh = generatePrivateKey()
+
+    database.setOrThrow("account", fresh)
+
+    setAccount(privateKeyToAccount(fresh))
+  }), [database])
+
+  useEffect(() => {
+    if (database == null)
+      return
+    getAndSetAccount(database)
+  }, [database])
 
   const [logs, setLogs] = useState<JSX.Element[]>([])
 
@@ -39,7 +74,11 @@ function Console() {
     }
   }, [])
 
+  console.log(account)
+
   const generateAndStop = useCallback(async (size: number, minimum: bigint, signal: AbortSignal) => {
+    if (account == null)
+      throw new UIError("Account not ready")
     if (worker == null)
       throw new UIError("Worker not ready")
 
@@ -92,7 +131,7 @@ function Console() {
       </div>,
       ...logs
     ])
-  }, [worker])
+  }, [account, worker])
 
   const generateAndLoop = useCallback(async (size: number, minimum: bigint, signal: AbortSignal) => {
     while (!signal.aborted) await generateAndStop(size, minimum, signal)
