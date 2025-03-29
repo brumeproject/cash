@@ -10,7 +10,7 @@ import { NetWorker } from "@hazae41/networker";
 import Head from "next/head";
 import { ChangeEvent, Fragment, JSX, useCallback, useEffect, useMemo, useState } from "react";
 import { bytesToHex } from "viem";
-import { useAccountContext } from "../account";
+import { AccountDialog, useAccountContext } from "../account";
 import { Locale } from "../locale";
 import { useLocaleContext } from "../locale/mods/context";
 
@@ -159,12 +159,6 @@ function Console() {
       }
     }
   }), [aborter, loop, size, minimum, generateAndStop, generateAndLoop])
-
-  const [reveal, setReveal] = useState(false)
-
-  const onRevealClick = useCallback(() => Errors.runOrLogAndAlert(async () => {
-    setReveal(true)
-  }), [])
 
   return <>
     <h1 className="text-2xl font-medium">
@@ -446,37 +440,7 @@ function Console() {
           </label>
         </Dialog>}
       {hash.url.pathname === "/account" &&
-        <Dialog>
-          <h1 className="text-2xl font-medium">
-            {Locale.get(Locale.Account, locale)}
-          </h1>
-          <div className="h-4" />
-          <div className="font-medium">
-            {Locale.get(Locale.Address, locale)}
-          </div>
-          <div className="h-2" />
-          <div className="flex items-center border border-default-contrast rounded-xl po-2 gap-2">
-            {account.address}
-          </div>
-          <div className="h-4" />
-          <div className="font-medium">
-            {Locale.get(Locale.PrivateKey, locale)}
-          </div>
-          <div className="h-2" />
-          <div className="flex items-center border border-default-contrast rounded-xl po-2 gap-2"
-            onClick={onRevealClick}>
-            {reveal === true
-              ? privateKey
-              : "•".repeat(privateKey.length)}
-          </div>
-          <div className="h-8" />
-          <div className="flex items-center flex-wrap-reverse gap-2">
-            <WideClickableOppositeButton>
-              <Outline.WalletIcon className="size-5" />
-              {`Switch to another wallet`}
-            </WideClickableOppositeButton>
-          </div>
-        </Dialog>}
+        <AccountDialog />}
     </HashSubpathProvider>
     <div className="h-[300px] p-1 grow flex flex-col border border-default-contrast rounded-xl">
       <div className="po-1 grow overflow-y-auto flex flex-col gap-2">

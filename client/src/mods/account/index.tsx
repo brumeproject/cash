@@ -1,11 +1,16 @@
 import { Errors } from "@/libs/errors";
+import { Outline } from "@/libs/heroicons";
 import { Nullable } from "@/libs/nullable";
 import { ChildrenProps } from "@/libs/react/props/children";
+import { WideClickableOppositeButton } from "@/libs/ui/buttons";
+import { Dialog } from "@/libs/ui/dialog";
 import { Option } from "@hazae41/option";
 import { Database } from "@hazae41/serac";
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { Hex, PrivateKeyAccount } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
+import { Locale } from "../locale";
+import { useLocaleContext } from "../locale/mods/context";
 
 export interface Account {
   readonly account: PrivateKeyAccount
@@ -70,4 +75,47 @@ export function AccountProvider(props: ChildrenProps) {
   return <AccountContext.Provider value={account}>
     {children}
   </AccountContext.Provider>
+}
+
+export function AccountDialog() {
+  const locale = useLocaleContext().getOrThrow()
+  const { account, privateKey } = useAccountContext().getOrThrow()
+
+  const [reveal, setReveal] = useState(false)
+
+  const onRevealClick = useCallback(() => Errors.runOrLogAndAlert(async () => {
+    setReveal(true)
+  }), [])
+
+  return <Dialog>
+    <h1 className="text-2xl font-medium">
+      {Locale.get(Locale.Account, locale)}
+    </h1>
+    <div className="h-4" />
+    <div className="font-medium">
+      {Locale.get(Locale.Address, locale)}
+    </div>
+    <div className="h-2" />
+    <div className="flex items-center border border-default-contrast rounded-xl po-2 gap-2">
+      {account.address}
+    </div>
+    <div className="h-4" />
+    <div className="font-medium">
+      {Locale.get(Locale.PrivateKey, locale)}
+    </div>
+    <div className="h-2" />
+    <div className="flex items-center border border-default-contrast rounded-xl po-2 gap-2"
+      onClick={onRevealClick}>
+      {reveal === true
+        ? privateKey
+        : "•".repeat(privateKey.length)}
+    </div>
+    <div className="h-8" />
+    <div className="flex items-center flex-wrap-reverse gap-2">
+      <WideClickableOppositeButton>
+        <Outline.WalletIcon className="size-5" />
+        {`Switch to another wallet`}
+      </WideClickableOppositeButton>
+    </div>
+  </Dialog>
 }
