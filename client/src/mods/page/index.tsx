@@ -65,9 +65,11 @@ function Console() {
       const valueString = valueBigInt.toString()
 
       setLogs(logs => [
-        <div className="text-default-contrast">
-          {Locale.get(Locale.YouGeneratedX, locale)(`${valueString} sparks`)}
-        </div>,
+        <Fragment key={crypto.randomUUID()}>
+          <div className="text-default-contrast">
+            {Locale.get(Locale.YouGeneratedX, locale)(`${valueString} sparks`)}
+          </div>
+        </Fragment>,
         ...logs
       ])
     }
@@ -87,9 +89,11 @@ function Console() {
     const result = await response.json()
 
     setLogs(logs => [
-      <div className="">
-        {Locale.get(Locale.YouEarnedX, locale)(`${result} tokens`)}
-      </div>,
+      <Fragment key={crypto.randomUUID()}>
+        <div className="">
+          {Locale.get(Locale.YouEarnedX, locale)(`${result} tokens`)}
+        </div>
+      </Fragment>,
       ...logs
     ])
   }, [account, worker])
