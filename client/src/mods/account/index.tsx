@@ -1,8 +1,6 @@
 import { Errors } from "@/libs/errors";
-import { Outline } from "@/libs/heroicons";
 import { Nullable } from "@/libs/nullable";
 import { ChildrenProps } from "@/libs/react/props/children";
-import { WideClickableOppositeAnchor } from "@/libs/ui/anchors";
 import { WideClickableContrastButton } from "@/libs/ui/buttons";
 import { Dialog } from "@/libs/ui/dialog";
 import { HashSubpathProvider, useCoords, useHashSubpath, usePathContext } from "@hazae41/chemin";
@@ -103,11 +101,15 @@ export function WalletDialog() {
           </h1>
           <div className="h-4" />
           <WideClickableContrastButton>
-            Browser Extension
+            Generate a new wallet
           </WideClickableContrastButton>
           <div className="h-2" />
           <WideClickableContrastButton>
-            WalletConnect
+            Import an existing wallet
+          </WideClickableContrastButton>
+          <div className="h-2" />
+          <WideClickableContrastButton>
+            Derive a wallet from another wallet
           </WideClickableContrastButton>
         </Dialog>}
     </HashSubpathProvider>
@@ -136,14 +138,12 @@ export function WalletDialog() {
       </div>
     </div>
     <div className="h-8 grow" />
-    <div className="flex items-center flex-wrap-reverse gap-2">
-      <WideClickableOppositeAnchor
-        onKeyDown={connect.onKeyDown}
-        onClick={connect.onClick}
-        href={connect.href}>
-        <Outline.WalletIcon className="size-5" />
-        {Locale.get(Locale.UseAnotherWallet, locale)}
-      </WideClickableOppositeAnchor>
-    </div>
+    <WideClickableContrastButton>
+      Generate a new wallet
+    </WideClickableContrastButton>
+    <div className="h-2" />
+    <WideClickableContrastButton>
+      Import an existing wallet
+    </WideClickableContrastButton>
   </Dialog>
 }
