@@ -13,12 +13,12 @@ import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { Locale } from "../locale";
 import { useLocaleContext } from "../locale/mods/context";
 
-export interface Account {
+export interface AccountHandle {
   readonly account: PrivateKeyAccount
   readonly privateKey: Hex
 }
 
-export const AccountContext = createContext<Nullable<Account>>(undefined)
+export const AccountContext = createContext<Nullable<AccountHandle>>(undefined)
 
 export function useAccountContext() {
   return Option.wrap(useContext(AccountContext))
@@ -42,7 +42,7 @@ export function AccountProvider(props: ChildrenProps) {
     getAndSetDatabase()
   }, [])
 
-  const [account, setAccount] = useState<Account>()
+  const [handle, setHandle] = useState<AccountHandle>()
 
   const getAndSetAccount = useCallback((database: Database) => Errors.runOrLogAndAlert(async () => {
     const stale = await database.getOrThrow<Hex>("account")
@@ -51,7 +51,7 @@ export function AccountProvider(props: ChildrenProps) {
       const account = privateKeyToAccount(stale)
       const privateKey = stale
 
-      return void setAccount({ account, privateKey })
+      return void setHandle({ account, privateKey })
     }
 
     const fresh = generatePrivateKey()
@@ -61,7 +61,7 @@ export function AccountProvider(props: ChildrenProps) {
     const account = privateKeyToAccount(fresh)
     const privateKey = fresh
 
-    setAccount({ account, privateKey })
+    setHandle({ account, privateKey })
   }), [database])
 
   useEffect(() => {
@@ -70,10 +70,10 @@ export function AccountProvider(props: ChildrenProps) {
     getAndSetAccount(database)
   }, [database])
 
-  if (account == null)
+  if (handle == null)
     return null
 
-  return <AccountContext.Provider value={account}>
+  return <AccountContext.Provider value={handle}>
     {children}
   </AccountContext.Provider>
 }
@@ -100,6 +100,8 @@ export function WalletDialog() {
           <h1 className="text-2xl font-medium">
             {Locale.get(Locale.Connection, locale)}
           </h1>
+          <div className="h-4" />
+
         </Dialog>}
     </HashSubpathProvider>
     <h1 className="text-2xl font-medium">
@@ -120,18 +122,20 @@ export function WalletDialog() {
     <div className="h-2" />
     <div className="flex items-center border border-default-contrast rounded-xl po-2 gap-2"
       onClick={onRevealClick}>
-      {reveal === true
-        ? privateKey
-        : "•".repeat(privateKey.length)}
+      <div className="block w-full overflow-hidden whitespace-nowrap text-ellipsis">
+        {reveal === true
+          ? privateKey
+          : "•".repeat(privateKey.length)}
+      </div>
     </div>
-    <div className="h-8" />
+    <div className="h-8 grow" />
     <div className="flex items-center flex-wrap-reverse gap-2">
       <WideClickableOppositeAnchor
         onKeyDown={connect.onKeyDown}
         onClick={connect.onClick}
         href={connect.href}>
         <Outline.WalletIcon className="size-5" />
-        {`Switch to another wallet`}
+        {Locale.get(Locale.UseAnotherWallet, locale)}
       </WideClickableOppositeAnchor>
     </div>
   </Dialog>
