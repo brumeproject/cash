@@ -17,7 +17,7 @@ import { useLocaleContext } from "../locale/mods/context";
 function Console() {
   const path = usePathContext().getOrThrow()
   const locale = useLocaleContext().getOrThrow()
-  const account = useAccountContext().getOrNull()
+  const { account, privateKey } = useAccountContext().getOrThrow()
 
   const hash = useHashSubpath(path)
 
@@ -40,8 +40,6 @@ function Console() {
   }, [])
 
   const generateAndStop = useCallback(async (size: number, minimum: bigint, signal: AbortSignal) => {
-    if (account == null)
-      throw new UIError("Account not ready")
     if (worker == null)
       throw new UIError("Worker not ready")
 
@@ -162,6 +160,12 @@ function Console() {
     }
   }), [aborter, loop, size, minimum, generateAndStop, generateAndLoop])
 
+  const [reveal, setReveal] = useState(false)
+
+  const onRevealClick = useCallback(() => Errors.runOrLogAndAlert(async () => {
+    setReveal(true)
+  }), [])
+
   return <>
     <h1 className="text-2xl font-medium">
       {Locale.get(Locale.SuperGenerator2048, locale)}
@@ -277,8 +281,9 @@ function Console() {
             }, locale)}
           </div>
           <div className="h-2" />
-          <label className="flex items-center justify-between bg-default-contrast rounded-xl po-2">
+          <label className="flex items-center bg-default-contrast rounded-xl po-2 gap-2">
             {Locale.get(Locale.Enabled, locale)}
+            <div className="grow" />
             <input type="checkbox"
               onChange={onLoopChange}
               checked={loop} />
@@ -446,7 +451,30 @@ function Console() {
             {Locale.get(Locale.Account, locale)}
           </h1>
           <div className="h-4" />
-
+          <div className="font-medium">
+            {Locale.get(Locale.Address, locale)}
+          </div>
+          <div className="text-default-contrast">
+            {`Your address on the blockchain`}
+          </div>
+          <div className="h-2" />
+          <div className="flex items-center border border-default-contrast rounded-xl po-2 gap-2">
+            {account.address}
+          </div>
+          <div className="h-4" />
+          <div className="font-medium">
+            {Locale.get(Locale.PrivateKey, locale)}
+          </div>
+          <div className="text-default-contrast">
+            {`Your private key to sign messages`}
+          </div>
+          <div className="h-2" />
+          <div className="flex items-center border border-default-contrast rounded-xl po-2 gap-2"
+            onClick={onRevealClick}>
+            {reveal === true
+              ? privateKey
+              : "•".repeat(privateKey.length)}
+          </div>
         </Dialog>}
     </HashSubpathProvider>
     <div className="h-[300px] p-1 grow flex flex-col border border-default-contrast rounded-xl">

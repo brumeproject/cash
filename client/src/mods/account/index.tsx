@@ -7,7 +7,12 @@ import { createContext, useCallback, useContext, useEffect, useState } from "rea
 import { Hex, PrivateKeyAccount } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 
-export const AccountContext = createContext<Nullable<PrivateKeyAccount>>(undefined)
+export interface Account {
+  readonly account: PrivateKeyAccount
+  readonly privateKey: Hex
+}
+
+export const AccountContext = createContext<Nullable<Account>>(undefined)
 
 export function useAccountContext() {
   return Option.wrap(useContext(AccountContext))
@@ -31,19 +36,26 @@ export function AccountProvider(props: ChildrenProps) {
     getAndSetDatabase()
   }, [])
 
-  const [account, setAccount] = useState<PrivateKeyAccount>()
+  const [account, setAccount] = useState<Account>()
 
   const getAndSetAccount = useCallback((database: Database) => Errors.runOrLogAndAlert(async () => {
     const stale = await database.getOrThrow<Hex>("account")
 
-    if (stale != null)
-      return void setAccount(privateKeyToAccount(stale))
+    if (stale != null) {
+      const account = privateKeyToAccount(stale)
+      const privateKey = stale
+
+      return void setAccount({ account, privateKey })
+    }
 
     const fresh = generatePrivateKey()
 
     database.setOrThrow("account", fresh)
 
-    setAccount(privateKeyToAccount(fresh))
+    const account = privateKeyToAccount(fresh)
+    const privateKey = fresh
+
+    setAccount({ account, privateKey })
   }), [database])
 
   useEffect(() => {
@@ -51,6 +63,9 @@ export function AccountProvider(props: ChildrenProps) {
       return
     getAndSetAccount(database)
   }, [database])
+
+  if (account == null)
+    return null
 
   return <AccountContext.Provider value={account}>
     {children}
