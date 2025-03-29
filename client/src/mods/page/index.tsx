@@ -454,9 +454,6 @@ function Console() {
           <div className="font-medium">
             {Locale.get(Locale.Address, locale)}
           </div>
-          <div className="text-default-contrast">
-            {`Your address on the blockchain`}
-          </div>
           <div className="h-2" />
           <div className="flex items-center border border-default-contrast rounded-xl po-2 gap-2">
             {account.address}
@@ -465,15 +462,19 @@ function Console() {
           <div className="font-medium">
             {Locale.get(Locale.PrivateKey, locale)}
           </div>
-          <div className="text-default-contrast">
-            {`Your private key to sign messages`}
-          </div>
           <div className="h-2" />
           <div className="flex items-center border border-default-contrast rounded-xl po-2 gap-2"
             onClick={onRevealClick}>
             {reveal === true
               ? privateKey
               : "•".repeat(privateKey.length)}
+          </div>
+          <div className="h-8" />
+          <div className="flex items-center flex-wrap-reverse gap-2">
+            <WideClickableOppositeButton>
+              <Outline.WalletIcon className="size-5" />
+              {`Switch to another wallet`}
+            </WideClickableOppositeButton>
           </div>
         </Dialog>}
     </HashSubpathProvider>
