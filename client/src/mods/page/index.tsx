@@ -17,7 +17,7 @@ import { useLocaleContext } from "../locale/mods/context";
 function Console() {
   const path = usePathContext().getOrThrow()
   const locale = useLocaleContext().getOrThrow()
-  const { account, privateKey } = useAccountContext().getOrThrow()
+  const account = useAccountContext().getOrThrow()
 
   const hash = useHashSubpath(path)
 
@@ -44,7 +44,7 @@ function Console() {
       throw new UIError("Worker not ready")
 
     const contractZeroHex = "0xabc755011B810fDC31F3504f0F855cadFcb2685A".toLowerCase()
-    const receiverZeroHex = account.address.toLowerCase()
+    const receiverZeroHex = account.current.viemAccount.address.toLowerCase()
 
     const nonceBytes = crypto.getRandomValues(new Uint8Array(32))
     const nonceZeroHex = bytesToHex(nonceBytes)
@@ -74,7 +74,7 @@ function Console() {
 
     signal.throwIfAborted()
 
-    const signatureZeroHex = await account.signMessage({ message: nonceZeroHex })
+    const signatureZeroHex = await account.current.viemAccount.signMessage({ message: nonceZeroHex })
 
     const headers = { "Content-Type": "application/json" }
     const body = JSON.stringify({ nonceZeroHex, secretsZeroHex, signatureZeroHex })

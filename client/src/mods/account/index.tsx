@@ -3,18 +3,25 @@ import { Nullable } from "@/libs/nullable";
 import { ChildrenProps } from "@/libs/react/props/children";
 import { WideClickableContrastButton } from "@/libs/ui/buttons";
 import { Dialog } from "@/libs/ui/dialog";
-import { HashSubpathProvider, useCoords, useHashSubpath, usePathContext } from "@hazae41/chemin";
+import { HashSubpathProvider, useHashSubpath, usePathContext } from "@hazae41/chemin";
 import { Option } from "@hazae41/option";
 import { Database } from "@hazae41/serac";
-import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { Hex, PrivateKeyAccount } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { Locale } from "../locale";
 import { useLocaleContext } from "../locale/mods/context";
 
-export interface AccountHandle {
-  readonly account: PrivateKeyAccount
+export interface AccountInfo {
   readonly privateKey: Hex
+
+  readonly viemAccount: PrivateKeyAccount
+}
+
+export interface AccountHandle {
+  readonly current: AccountInfo
+
+  setOrThrow(privateKey: Hex): Promise<void>
 }
 
 export const AccountContext = createContext<Nullable<AccountHandle>>(undefined)
@@ -41,33 +48,50 @@ export function AccountProvider(props: ChildrenProps) {
     getAndSetDatabase()
   }, [])
 
-  const [handle, setHandle] = useState<AccountHandle>()
+  const [current, setCurrent] = useState<AccountInfo>()
 
-  const getAndSetAccount = useCallback((database: Database) => Errors.runOrLogAndAlert(async () => {
-    const stale = await database.getOrThrow<Hex>("account")
+  const getAndSetAccount = useCallback(async (database: Database) => {
+    const stalePrivateKey = await database.getOrThrow<Hex>("account")
 
-    if (stale != null) {
-      const account = privateKeyToAccount(stale)
-      const privateKey = stale
+    if (stalePrivateKey != null) {
+      const viemAccount = privateKeyToAccount(stalePrivateKey)
+      const privateKey = stalePrivateKey
 
-      return void setHandle({ account, privateKey })
+      return void setCurrent({ viemAccount, privateKey })
     }
 
-    const fresh = generatePrivateKey()
+    const freshPrivateKey = generatePrivateKey()
 
-    database.setOrThrow("account", fresh)
+    database.setOrThrow("account", freshPrivateKey)
 
-    const account = privateKeyToAccount(fresh)
-    const privateKey = fresh
+    const privateKey = freshPrivateKey
+    const viemAccount = privateKeyToAccount(privateKey)
 
-    setHandle({ account, privateKey })
-  }), [database])
+    setCurrent({ viemAccount, privateKey })
+  }, [database])
 
   useEffect(() => {
     if (database == null)
       return
-    getAndSetAccount(database)
+    getAndSetAccount(database).catch(Errors.logAndAlert)
   }, [database])
+
+  const setOrThrow = useCallback(async (privateKey: Hex) => {
+    if (database == null)
+      return
+
+    const viemAccount = privateKeyToAccount(privateKey)
+
+    await database.setOrThrow("account", privateKey)
+
+    setCurrent({ viemAccount, privateKey })
+  }, [database])
+
+  const handle = useMemo(() => {
+    if (current == null)
+      return
+    return { current, setOrThrow }
+  }, [current, setOrThrow])
 
   if (handle == null)
     return null
@@ -80,17 +104,28 @@ export function AccountProvider(props: ChildrenProps) {
 export function WalletDialog() {
   const path = usePathContext().getOrThrow()
   const locale = useLocaleContext().getOrThrow()
-  const { account, privateKey } = useAccountContext().getOrThrow()
+  const account = useAccountContext().getOrThrow()
 
   const hash = useHashSubpath(path)
-
-  const connect = useCoords(hash, "/connect")
 
   const [reveal, setReveal] = useState(false)
 
   const onRevealClick = useCallback(() => Errors.runOrLogAndAlert(async () => {
     setReveal(true)
   }), [])
+
+  const onGenerateClick = useCallback(() => Errors.runOrLogAndAlert(async () => {
+    await account.setOrThrow(generatePrivateKey())
+  }), [account])
+
+  const onImportClick = useCallback(() => Errors.runOrLogAndAlert(async () => {
+    const privateKey = prompt("Enter your private key")
+
+    if (privateKey == null)
+      return
+
+    await account.setOrThrow(privateKey as Hex)
+  }), [account])
 
   return <Dialog>
     <HashSubpathProvider>
@@ -107,10 +142,10 @@ export function WalletDialog() {
           <WideClickableContrastButton>
             Import an existing wallet
           </WideClickableContrastButton>
-          <div className="h-2" />
+          {/* <div className="h-2" />
           <WideClickableContrastButton>
             Derive a wallet from another wallet
-          </WideClickableContrastButton>
+          </WideClickableContrastButton> */}
         </Dialog>}
     </HashSubpathProvider>
     <h1 className="text-2xl font-medium">
@@ -122,7 +157,7 @@ export function WalletDialog() {
     </div>
     <div className="h-2" />
     <div className="flex items-center border border-default-contrast rounded-xl po-2 gap-2">
-      {account.address}
+      {account.current.viemAccount.address}
     </div>
     <div className="h-4" />
     <div className="font-medium">
@@ -133,16 +168,18 @@ export function WalletDialog() {
       onClick={onRevealClick}>
       <div className="block w-full overflow-hidden whitespace-nowrap text-ellipsis">
         {reveal === true
-          ? privateKey
-          : "•".repeat(privateKey.length)}
+          ? account.current.privateKey
+          : "•".repeat(account.current.privateKey.length)}
       </div>
     </div>
     <div className="h-8 grow" />
-    <WideClickableContrastButton>
-      Generate a new wallet
+    <WideClickableContrastButton
+      onClick={onGenerateClick}>
+      {Locale.get(Locale.GenerateANewWallet, locale)}
     </WideClickableContrastButton>
     <div className="h-2" />
-    <WideClickableContrastButton>
+    <WideClickableContrastButton
+      onClick={onImportClick}>
       Import an existing wallet
     </WideClickableContrastButton>
   </Dialog>
