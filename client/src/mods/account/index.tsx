@@ -127,6 +127,23 @@ export function WalletDialog() {
     await account.setOrThrow(privateKey as Hex)
   }), [account])
 
+  const [balance, setBalance] = useState()
+
+  const getBalanceOrThrow = useCallback(async () => {
+    const response = await fetch(`https://api.cash.brume.money/api/balance?address=${account.current.viemAccount.address}`)
+
+    if (!response.ok)
+      throw new Error("Failed to fetch balance")
+
+    const data = await response.json()
+
+    setBalance(data)
+  }, [])
+
+  useEffect(() => {
+    getBalanceOrThrow().catch(Errors.logAndAlert)
+  }, [])
+
   return <Dialog>
     <HashSubpathProvider>
       {hash.url.pathname === "/connect" &&
@@ -151,6 +168,15 @@ export function WalletDialog() {
     <h1 className="text-2xl font-medium">
       {Locale.get(Locale.Wallet, locale)}
     </h1>
+    <div className="h-4" />
+    <div className="font-medium">
+      {Locale.get(Locale.Address, locale)}
+    </div>
+    <div className="h-2" />
+    <div className="flex items-center border border-default-contrast rounded-xl po-2 gap-2">
+      {balance}
+    </div>
+    <div className="h-4" />
     <div className="h-4" />
     <div className="font-medium">
       {Locale.get(Locale.Address, locale)}

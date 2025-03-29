@@ -37,7 +37,7 @@ export default async function handler(
   const [account] = data
 
   if (account == null)
-    return void res.status(200).setHeaders(headers).json(JSON.stringify("0"))
+    return void res.status(200).setHeaders(headers).json("0")
 
   const { balance } = account
 
