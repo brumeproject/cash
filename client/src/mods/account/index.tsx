@@ -127,7 +127,7 @@ export function WalletDialog() {
     await account.setOrThrow(privateKey as Hex)
   }), [account])
 
-  const [balance, setBalance] = useState()
+  const [balance, setBalance] = useState<string>()
 
   const getBalanceOrThrow = useCallback(async () => {
     const response = await fetch(`https://api.cash.brume.money/api/balance?address=${account.current.viemAccount.address}`)
@@ -170,13 +170,12 @@ export function WalletDialog() {
     </h1>
     <div className="h-4" />
     <div className="font-medium">
-      {Locale.get(Locale.Address, locale)}
+      {Locale.get(Locale.Balance, locale)}
     </div>
     <div className="h-2" />
     <div className="flex items-center border border-default-contrast rounded-xl po-2 gap-2">
-      {balance}
+      {balance == null ? "..." : balance}
     </div>
-    <div className="h-4" />
     <div className="h-4" />
     <div className="font-medium">
       {Locale.get(Locale.Address, locale)}
