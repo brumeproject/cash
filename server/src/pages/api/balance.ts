@@ -34,5 +34,12 @@ export default async function handler(
   if (error != null)
     throw new Error("Database error", { cause: error.message })
 
-  res.status(200).setHeaders(headers).json(data);
+  const [account] = data
+
+  if (account == null)
+    return void res.status(200).setHeaders(headers).json(JSON.stringify("0"))
+
+  const { balance } = account
+
+  res.status(200).setHeaders(headers).json(balance);
 }
