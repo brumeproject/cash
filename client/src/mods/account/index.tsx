@@ -138,7 +138,7 @@ export function WalletDialog() {
     const data = await response.json()
 
     setBalance(data)
-  }, [])
+  }, [account])
 
   useEffect(() => {
     getBalanceOrThrow().catch(Errors.logAndAlert)
