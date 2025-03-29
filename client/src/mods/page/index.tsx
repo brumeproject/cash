@@ -21,6 +21,7 @@ function Console() {
 
   const hash = useHashSubpath(path)
 
+  const profile = useCoords(hash, "/profile")
   const settings = useCoords(hash, "/settings")
 
   const [database, setDatabase] = useState<Database>()
@@ -501,6 +502,14 @@ function Console() {
         href={settings.href}>
         <div className="p-1">
           <Outline.EllipsisVerticalIcon className="size-5" />
+        </div>
+      </ClickableContrastAnchor>
+      <ClickableContrastAnchor
+        onKeyDown={profile.onKeyDown}
+        onClick={profile.onClick}
+        href={profile.href}>
+        <div className="p-1">
+          <Outline.UserIcon className="size-5" />
         </div>
       </ClickableContrastAnchor>
     </div>
