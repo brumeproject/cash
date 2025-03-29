@@ -20,6 +20,17 @@ export function WideClickableOppositeButton(props: ChildrenProps & ButtonProps) 
   </button>
 }
 
+export function WideClickableContrastButton(props: ChildrenProps & ButtonProps) {
+  const { children, ...rest } = props
+
+  return <button className="flex-1 group po-2 bg-default-contrast rounded-xl outline-none whitespace-nowrap enabled:hover:bg-default-double-contrast focus-visible:outline-default-contrast disabled:opacity-50 transition-opacity"
+    {...rest}>
+    <GapperAndClickerInButtonDiv>
+      {children}
+    </GapperAndClickerInButtonDiv>
+  </button>
+}
+
 export function ClickableOppositeButton(props: ChildrenProps & ButtonProps) {
   const { children, ...rest } = props
 

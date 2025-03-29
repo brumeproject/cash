@@ -3,6 +3,7 @@ import { Outline } from "@/libs/heroicons";
 import { Nullable } from "@/libs/nullable";
 import { ChildrenProps } from "@/libs/react/props/children";
 import { WideClickableOppositeAnchor } from "@/libs/ui/anchors";
+import { WideClickableContrastButton } from "@/libs/ui/buttons";
 import { Dialog } from "@/libs/ui/dialog";
 import { HashSubpathProvider, useCoords, useHashSubpath, usePathContext } from "@hazae41/chemin";
 import { Option } from "@hazae41/option";
@@ -101,7 +102,12 @@ export function WalletDialog() {
             {Locale.get(Locale.Connection, locale)}
           </h1>
           <div className="h-4" />
-
+          <WideClickableContrastButton>
+            Browser Extension
+          </WideClickableContrastButton>
+          <WideClickableContrastButton>
+            WalletConnect
+          </WideClickableContrastButton>
         </Dialog>}
     </HashSubpathProvider>
     <h1 className="text-2xl font-medium">
