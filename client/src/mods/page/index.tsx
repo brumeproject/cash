@@ -10,7 +10,7 @@ import { NetWorker } from "@hazae41/networker";
 import Head from "next/head";
 import { ChangeEvent, Fragment, JSX, useCallback, useEffect, useMemo, useState } from "react";
 import { bytesToHex } from "viem";
-import { AccountDialog, useAccountContext } from "../account";
+import { WalletDialog, useAccountContext } from "../account";
 import { Locale } from "../locale";
 import { useLocaleContext } from "../locale/mods/context";
 
@@ -21,7 +21,7 @@ function Console() {
 
   const hash = useHashSubpath(path)
 
-  const profile = useCoords(hash, "/account")
+  const wallet = useCoords(hash, "/wallet")
   const settings = useCoords(hash, "/settings")
 
   const [logs, setLogs] = useState<JSX.Element[]>([])
@@ -439,8 +439,8 @@ function Console() {
               value={size} />
           </label>
         </Dialog>}
-      {hash.url.pathname === "/account" &&
-        <AccountDialog />}
+      {hash.url.pathname === "/wallet" &&
+        <WalletDialog />}
     </HashSubpathProvider>
     <div className="h-[300px] p-1 grow flex flex-col border border-default-contrast rounded-xl">
       <div className="po-1 grow overflow-y-auto flex flex-col gap-2">
@@ -470,11 +470,11 @@ function Console() {
         </div>
       </ClickableContrastAnchor>
       <ClickableContrastAnchor
-        onKeyDown={profile.onKeyDown}
-        onClick={profile.onClick}
-        href={profile.href}>
+        onKeyDown={wallet.onKeyDown}
+        onClick={wallet.onClick}
+        href={wallet.href}>
         <div className="p-1">
-          <Outline.UserIcon className="size-5" />
+          <Outline.WalletIcon className="size-5" />
         </div>
       </ClickableContrastAnchor>
     </div>

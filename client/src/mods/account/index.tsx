@@ -2,8 +2,9 @@ import { Errors } from "@/libs/errors";
 import { Outline } from "@/libs/heroicons";
 import { Nullable } from "@/libs/nullable";
 import { ChildrenProps } from "@/libs/react/props/children";
-import { WideClickableOppositeButton } from "@/libs/ui/buttons";
+import { WideClickableOppositeAnchor } from "@/libs/ui/anchors";
 import { Dialog } from "@/libs/ui/dialog";
+import { HashSubpathProvider, useCoords, useHashSubpath, usePathContext } from "@hazae41/chemin";
 import { Option } from "@hazae41/option";
 import { Database } from "@hazae41/serac";
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
@@ -77,9 +78,14 @@ export function AccountProvider(props: ChildrenProps) {
   </AccountContext.Provider>
 }
 
-export function AccountDialog() {
+export function WalletDialog() {
+  const path = usePathContext().getOrThrow()
   const locale = useLocaleContext().getOrThrow()
   const { account, privateKey } = useAccountContext().getOrThrow()
+
+  const hash = useHashSubpath(path)
+
+  const connect = useCoords(hash, "/connect")
 
   const [reveal, setReveal] = useState(false)
 
@@ -88,6 +94,14 @@ export function AccountDialog() {
   }), [])
 
   return <Dialog>
+    <HashSubpathProvider>
+      {hash.url.pathname === "/connect" &&
+        <Dialog>
+          <h1 className="text-2xl font-medium">
+            {Locale.get(Locale.Connection, locale)}
+          </h1>
+        </Dialog>}
+    </HashSubpathProvider>
     <h1 className="text-2xl font-medium">
       {Locale.get(Locale.Account, locale)}
     </h1>
@@ -112,10 +126,13 @@ export function AccountDialog() {
     </div>
     <div className="h-8" />
     <div className="flex items-center flex-wrap-reverse gap-2">
-      <WideClickableOppositeButton>
+      <WideClickableOppositeAnchor
+        onKeyDown={connect.onKeyDown}
+        onClick={connect.onClick}
+        href={connect.href}>
         <Outline.WalletIcon className="size-5" />
         {`Switch to another wallet`}
-      </WideClickableOppositeButton>
+      </WideClickableOppositeAnchor>
     </div>
   </Dialog>
 }
