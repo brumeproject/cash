@@ -12,25 +12,25 @@ import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { Locale } from "../locale";
 import { useLocaleContext } from "../locale/mods/context";
 
-export interface AccountInfo {
+export interface WalletInfo {
   readonly privateKey: Hex
 
   readonly viemAccount: PrivateKeyAccount
 }
 
-export interface AccountHandle {
-  readonly current: AccountInfo
+export interface WalletHandle {
+  readonly current: WalletInfo
 
   setOrThrow(privateKey: Hex): Promise<void>
 }
 
-export const AccountContext = createContext<Nullable<AccountHandle>>(undefined)
+export const WalletContext = createContext<Nullable<WalletHandle>>(undefined)
 
-export function useAccountContext() {
-  return Option.wrap(useContext(AccountContext))
+export function useWalletContext() {
+  return Option.wrap(useContext(WalletContext))
 }
 
-export function AccountProvider(props: ChildrenProps) {
+export function WalletProvider(props: ChildrenProps) {
   const { children } = props
 
   const [database, setDatabase] = useState<Database>()
@@ -48,7 +48,7 @@ export function AccountProvider(props: ChildrenProps) {
     getAndSetDatabase()
   }, [])
 
-  const [current, setCurrent] = useState<AccountInfo>()
+  const [current, setCurrent] = useState<WalletInfo>()
 
   const getAndSetAccount = useCallback(async (database: Database) => {
     const stalePrivateKey = await database.getOrThrow<Hex>("account")
@@ -62,7 +62,7 @@ export function AccountProvider(props: ChildrenProps) {
 
     const freshPrivateKey = generatePrivateKey()
 
-    database.setOrThrow("account", freshPrivateKey)
+    await database.setOrThrow("account", freshPrivateKey)
 
     const privateKey = freshPrivateKey
     const viemAccount = privateKeyToAccount(privateKey)
@@ -96,15 +96,15 @@ export function AccountProvider(props: ChildrenProps) {
   if (handle == null)
     return null
 
-  return <AccountContext.Provider value={handle}>
+  return <WalletContext.Provider value={handle}>
     {children}
-  </AccountContext.Provider>
+  </WalletContext.Provider>
 }
 
 export function WalletDialog() {
   const path = usePathContext().getOrThrow()
   const locale = useLocaleContext().getOrThrow()
-  const account = useAccountContext().getOrThrow()
+  const account = useWalletContext().getOrThrow()
 
   const hash = useHashSubpath(path)
 
@@ -149,7 +149,7 @@ export function WalletDialog() {
         </Dialog>}
     </HashSubpathProvider>
     <h1 className="text-2xl font-medium">
-      {Locale.get(Locale.Account, locale)}
+      {Locale.get(Locale.Wallet, locale)}
     </h1>
     <div className="h-4" />
     <div className="font-medium">

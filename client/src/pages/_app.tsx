@@ -3,7 +3,7 @@ import "@hazae41/symbol-dispose-polyfill";
 import "@/styles/index.css";
 
 import { Nullable } from "@/libs/nullable";
-import { AccountProvider } from "@/mods/account";
+import { WalletProvider } from "@/mods/account";
 import { HashPathProvider } from "@hazae41/chemin";
 import { Immutable } from "@hazae41/immutable";
 import type { AppProps } from "next/app";
@@ -42,8 +42,8 @@ export default function App({ Component, pageProps }: AppProps) {
     return null
 
   return <HashPathProvider>
-    <AccountProvider>
+    <WalletProvider>
       <Component {...pageProps} />
-    </AccountProvider>
+    </WalletProvider>
   </HashPathProvider>
 }

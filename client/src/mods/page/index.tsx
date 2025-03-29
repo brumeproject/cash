@@ -10,14 +10,14 @@ import { NetWorker } from "@hazae41/networker";
 import Head from "next/head";
 import { ChangeEvent, Fragment, JSX, useCallback, useEffect, useMemo, useState } from "react";
 import { bytesToHex } from "viem";
-import { WalletDialog, useAccountContext } from "../account";
+import { WalletDialog, useWalletContext } from "../account";
 import { Locale } from "../locale";
 import { useLocaleContext } from "../locale/mods/context";
 
 function Console() {
   const path = usePathContext().getOrThrow()
   const locale = useLocaleContext().getOrThrow()
-  const account = useAccountContext().getOrThrow()
+  const account = useWalletContext().getOrThrow()
 
   const hash = useHashSubpath(path)
 
