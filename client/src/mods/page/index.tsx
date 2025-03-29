@@ -28,8 +28,8 @@ function Console() {
   const getAndSetDatabase = useCallback(() => Errors.runOrLogAndAlert(async () => {
     const database = await Database.openOrThrow("meta", 1, () => { })
 
-    // for await (const key of database.collectOrThrow()) 
-    //   await database.deleteOrThrow(key)
+    for await (const key of database.collectOrThrow())
+      await database.deleteOrThrow(key)
 
     setDatabase(database)
   }), [])
