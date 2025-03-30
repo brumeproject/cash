@@ -279,7 +279,7 @@ function Console() {
             }, locale)}
           </div>
           <div className="h-2" />
-          <label className="flex items-center bg-default-contrast rounded-xl po-2 gap-2">
+          <label className="flex items-center bg-default-contrast rounded-xl po-2 gap-2 *:shrink-0">
             {Locale.get(Locale.Enabled, locale)}
             <div className="grow" />
             <input type="checkbox"
@@ -356,9 +356,9 @@ function Console() {
             }, locale)}
           </div>
           <div className="h-2" />
-          <label className="flex items-center bg-default-contrast rounded-xl po-2 gap-2">
+          <label className="flex items-center bg-default-contrast rounded-xl po-2 gap-2 *:shrink-0">
             {Locale.get(Locale.Value, locale)}
-            <div className="text-default-contrast shrink-0">1 — +∞</div>
+            <div className="text-default-contrast">1 — +∞</div>
             <div className="grow" />
             <input type="number" className="outline-none text-end"
               onChange={onMinimumChange}
@@ -434,9 +434,9 @@ function Console() {
             }, locale)}
           </div>
           <div className="h-2" />
-          <label className="flex items-center bg-default-contrast rounded-xl po-2 gap-2">
+          <label className="flex items-center bg-default-contrast rounded-xl po-2 gap-2 *:shrink-0">
             {Locale.get(Locale.Value, locale)}
-            <div className="text-default-contrast shrink-0">1 — 2048</div>
+            <div className="text-default-contrast">1 — 2048</div>
             <div className="grow" />
             <input type="number" className="outline-none text-end"
               onChange={onSizeChange}
