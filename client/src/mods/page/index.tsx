@@ -5,8 +5,9 @@ import { WideClickableOppositeButton } from "@/libs/ui/buttons";
 import { Dialog } from "@/libs/ui/dialog";
 import { Loading } from "@/libs/ui/loading";
 import { useWriter } from "@/libs/writer";
+import { Stack } from "@hazae41/box";
 import { HashSubpathProvider, useCoords, useHashSubpath, usePathContext } from "@hazae41/chemin";
-import { NetWorker } from "@hazae41/networker";
+import { NetMixin, NetWorker } from "@hazae41/networker";
 import Head from "next/head";
 import { ChangeEvent, Fragment, JSX, useCallback, useEffect, useMemo, useState } from "react";
 import { bytesToHex } from "viem";
@@ -26,53 +27,69 @@ function Console() {
 
   const [logs, setLogs] = useState<JSX.Element[]>([])
 
-  const [worker, setWorker] = useState<NetWorker>()
+  const workers = useMemo(() => {
+    const stack = new Stack<NetWorker>()
 
-  useEffect(() => {
-    const worker = new NetWorker()
-    setWorker(worker)
+    for (let i = 0; i < (navigator.hardwareConcurrency - 1); i++)
+      stack.push(new NetWorker())
 
-    return () => {
-      using _ = worker
-
-      setWorker(undefined)
-    }
+    return stack
   }, [])
 
-  const generateAndStop = useCallback(async (size: number, minimum: bigint, signal: AbortSignal) => {
-    if (worker == null)
-      throw new UIError("Worker not ready")
+  useEffect(() => () => {
+    using _ = workers
+  }, [workers])
 
+  const generateAndStop = useCallback(async (size: number, minimum: bigint, signal: AbortSignal) => {
     const contractZeroHex = "0xabc755011B810fDC31F3504f0F855cadFcb2685A".toLowerCase()
     const receiverZeroHex = account.current.viemAccount.address.toLowerCase()
 
     const nonceBytes = crypto.getRandomValues(new Uint8Array(32))
     const nonceZeroHex = bytesToHex(nonceBytes)
 
-    await using mixin = await worker.createOrThrow({ contractZeroHex, receiverZeroHex, nonceZeroHex })
-
     const minimumBigInt = minimum
     const minimumZeroHex = `0x${minimumBigInt.toString(16)}`
 
     let secretsZeroHex = "0x"
 
+    const premixins = new Array<Promise<NetMixin>>()
+
+    for (const worker of workers.array)
+      premixins.push(worker.createOrThrow({ contractZeroHex, receiverZeroHex, nonceZeroHex }))
+
+    await using mixins = new Stack(await Promise.all(premixins))
+
+    console.log("Generating", size, "secrets")
+
+    const promises = mixins.array.map(() => Promise.resolve())
+
     for (let i = 0; i < size && !signal.aborted; i++) {
-      const generated = await mixin.generateOrThrow(minimumZeroHex)
+      promises[i % mixins.array.length] = promises[i % mixins.array.length].then(async () => {
+        console.log("Generating", i)
 
-      secretsZeroHex += generated.secretZeroHex.slice(2)
+        const mixin = mixins.array[i % mixins.array.length]
 
-      const valueBigInt = BigInt(generated.valueZeroHex)
-      const valueString = valueBigInt.toString()
+        const generated = await mixin.generateOrThrow(minimumZeroHex)
 
-      setLogs(logs => [
-        <Fragment key={crypto.randomUUID()}>
-          <div className="text-default-contrast">
-            {Locale.get(Locale.YouGeneratedX, locale)(`${valueString} sparks`)}
-          </div>
-        </Fragment>,
-        ...logs
-      ])
+        secretsZeroHex += generated.secretZeroHex.slice(2)
+
+        const valueBigInt = BigInt(generated.valueZeroHex)
+        const valueString = valueBigInt.toString()
+
+        setLogs(logs => [
+          <Fragment key={crypto.randomUUID()}>
+            <div className="text-default-contrast">
+              {Locale.get(Locale.YouGeneratedX, locale)(`${valueString} sparks`)}
+            </div>
+          </Fragment>,
+          ...logs
+        ])
+      })
     }
+
+    console.log("Waiting for workers to finish")
+
+    await Promise.all(promises)
 
     signal.throwIfAborted()
 
@@ -96,7 +113,7 @@ function Console() {
       </Fragment>,
       ...logs
     ])
-  }, [account, worker])
+  }, [account, workers])
 
   const generateAndLoop = useCallback(async (size: number, minimum: bigint, signal: AbortSignal) => {
     while (!signal.aborted) await generateAndStop(size, minimum, signal)

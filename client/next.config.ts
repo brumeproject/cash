@@ -56,8 +56,7 @@ async function compileServiceWorker(wpconfig: any) {
 }
 
 const nextConfig: NextConfig = withNextSidebuild({
-  /* config options here */
-  reactStrictMode: true,
+  reactStrictMode: false,
 
   /**
    * Recommended in order to output the webapp as HTML
