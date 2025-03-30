@@ -358,7 +358,7 @@ function Console() {
           <div className="h-2" />
           <label className="flex items-center bg-default-contrast rounded-xl po-2 gap-2">
             {Locale.get(Locale.Value, locale)}
-            <div className="text-default-contrast">1 — +∞</div>
+            <div className="text-default-contrast shrink-0">1 — +∞</div>
             <div className="grow" />
             <input type="number" className="outline-none text-end"
               onChange={onMinimumChange}
@@ -436,7 +436,7 @@ function Console() {
           <div className="h-2" />
           <label className="flex items-center bg-default-contrast rounded-xl po-2 gap-2">
             {Locale.get(Locale.Value, locale)}
-            <div className="text-default-contrast">1 — 2048</div>
+            <div className="text-default-contrast shrink-0">1 — 2048</div>
             <div className="grow" />
             <input type="number" className="outline-none text-end"
               onChange={onSizeChange}
