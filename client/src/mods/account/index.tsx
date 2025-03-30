@@ -182,7 +182,9 @@ export function WalletDialog() {
     </div>
     <div className="h-2" />
     <div className="flex items-center border border-default-contrast rounded-xl po-2 gap-2">
-      {account.current.viemAccount.address}
+      <div className="block w-full overflow-hidden whitespace-nowrap text-ellipsis">
+        {account.current.viemAccount.address}
+      </div>
     </div>
     <div className="h-4" />
     <div className="font-medium">
@@ -198,14 +200,15 @@ export function WalletDialog() {
       </div>
     </div>
     <div className="h-8 grow" />
-    <WideClickableContrastButton
-      onClick={onGenerateClick}>
-      {Locale.get(Locale.GenerateANewWallet, locale)}
-    </WideClickableContrastButton>
-    <div className="h-2" />
-    <WideClickableContrastButton
-      onClick={onImportClick}>
-      {Locale.get(Locale.ImportAnExistingWallet, locale)}
-    </WideClickableContrastButton>
+    <div className="flex items-center flex-wrap-reverse gap-2">
+      <WideClickableContrastButton
+        onClick={onGenerateClick}>
+        {Locale.get(Locale.GenerateANewWallet, locale)}
+      </WideClickableContrastButton>
+      <WideClickableContrastButton
+        onClick={onImportClick}>
+        {Locale.get(Locale.ImportAnExistingWallet, locale)}
+      </WideClickableContrastButton>
+    </div>
   </Dialog>
 }
