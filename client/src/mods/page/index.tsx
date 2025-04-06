@@ -16,6 +16,12 @@ import { WalletDialog, useWalletContext } from "../account";
 import { Locale } from "../locale";
 import { useLocaleContext } from "../locale/mods/context";
 
+export interface Claimable {
+  readonly secretsZeroHex: string
+  readonly signatureZeroHex: string
+  readonly nonceZeroHex: string
+}
+
 function Console() {
   const path = usePathContext().getOrThrow()
   const locale = useLocaleContext().getOrThrow()
@@ -36,7 +42,7 @@ function Console() {
     using _ = workers
   }, [workers])
 
-  const generateAndStop = useCallback(async (size: number, minimum: bigint, signal: AbortSignal) => {
+  const generate = useCallback(async (size: number, minimum: bigint, signal: AbortSignal) => {
     const contractZeroHex = "0xabc755011B810fDC31F3504f0F855cadFcb2685A".toLowerCase()
     const receiverZeroHex = account.current.viemAccount.address.toLowerCase()
 
@@ -48,14 +54,14 @@ function Console() {
 
     const signatureZeroHex = await account.current.viemAccount.signMessage({ message: nonceZeroHex })
 
-    let secretsZeroHex = "0x"
-
     const premixins = new Array<Promise<NetMixin>>()
 
     for (let i = 0; i < workers.capacity; i++)
       premixins.push(workers.getOrThrow(i).getOrThrow().get().createOrThrow({ contractZeroHex, receiverZeroHex, nonceZeroHex }))
 
     await using mixins = new AsyncStack(await Promise.all(premixins))
+
+    let secretsZeroHex = "0x"
 
     async function generate() {
       using borrow = await workers.waitRandomOrThrow(x => x?.getOrNull()?.borrowOrNull(), signal)
@@ -89,6 +95,12 @@ function Console() {
 
     signal.throwIfAborted()
 
+    return { nonceZeroHex, secretsZeroHex, signatureZeroHex }
+  }, [account, workers])
+
+  const claim = useCallback(async (data: Claimable, signal: AbortSignal) => {
+    const { secretsZeroHex, signatureZeroHex, nonceZeroHex } = data
+
     const headers = { "Content-Type": "application/json" }
     const body = JSON.stringify({ nonceZeroHex, secretsZeroHex, signatureZeroHex })
 
@@ -107,11 +119,15 @@ function Console() {
       </Fragment>,
       ...logs
     ])
-  }, [account, workers])
+  }, [])
+
+  const generateAndStop = useCallback(async (size: number, minimum: bigint, signal: AbortSignal) => {
+    await claim(await generate(size, minimum, signal), signal)
+  }, [generate])
 
   const generateAndLoop = useCallback(async (size: number, minimum: bigint, signal: AbortSignal) => {
-    while (!signal.aborted) await generateAndStop(size, minimum, signal)
-  }, [generateAndStop])
+    while (!signal.aborted) claim(await generate(size, minimum, signal), signal).catch(Errors.logAndAlert)
+  }, [generate])
 
   const [loop, setLoop] = useState(false)
 
