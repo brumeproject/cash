@@ -5,9 +5,10 @@ import { WideClickableOppositeButton } from "@/libs/ui/buttons";
 import { Dialog } from "@/libs/ui/dialog";
 import { Loading } from "@/libs/ui/loading";
 import { useWriter } from "@/libs/writer";
-import { Stack } from "@hazae41/box";
+import { AsyncStack, Disposer } from "@hazae41/box";
 import { HashSubpathProvider, useCoords, useHashSubpath, usePathContext } from "@hazae41/chemin";
 import { NetMixin, NetWorker } from "@hazae41/networker";
+import { AutoPool } from "@hazae41/piscine";
 import Head from "next/head";
 import { ChangeEvent, Fragment, JSX, useCallback, useEffect, useMemo, useState } from "react";
 import { bytesToHex } from "viem";
@@ -27,14 +28,9 @@ function Console() {
 
   const [logs, setLogs] = useState<JSX.Element[]>([])
 
-  const workers = useMemo(() => {
-    const stack = new Stack<NetWorker>()
-
-    for (let i = 0; i < (navigator.hardwareConcurrency - 1); i++)
-      stack.push(new NetWorker())
-
-    return stack
-  }, [])
+  const workers = useMemo(() => new AutoPool<NetWorker>(async () => {
+    return Disposer.wrap(new NetWorker())
+  }, navigator.hardwareConcurrency - 1), [])
 
   useEffect(() => () => {
     using _ = workers
@@ -50,50 +46,48 @@ function Console() {
     const minimumBigInt = minimum
     const minimumZeroHex = `0x${minimumBigInt.toString(16)}`
 
+    const signatureZeroHex = await account.current.viemAccount.signMessage({ message: nonceZeroHex })
+
     let secretsZeroHex = "0x"
 
     const premixins = new Array<Promise<NetMixin>>()
 
-    for (const worker of workers.array)
-      premixins.push(worker.createOrThrow({ contractZeroHex, receiverZeroHex, nonceZeroHex }))
+    for (let i = 0; i < workers.capacity; i++)
+      premixins.push(workers.getOrThrow(i).getOrThrow().get().createOrThrow({ contractZeroHex, receiverZeroHex, nonceZeroHex }))
 
-    await using mixins = new Stack(await Promise.all(premixins))
+    await using mixins = new AsyncStack(await Promise.all(premixins))
 
-    console.log("Generating", size, "secrets")
+    async function generate() {
+      using borrow = await workers.waitRandomOrThrow(x => x?.getOrNull()?.borrowOrNull(), signal)
 
-    const promises = mixins.array.map(() => Promise.resolve())
+      const index = borrow.getOrThrow().index
+      const mixin = mixins.array[index]
 
-    for (let i = 0; i < size && !signal.aborted; i++) {
-      promises[i % mixins.array.length] = promises[i % mixins.array.length].then(async () => {
-        console.log("Generating", i)
+      const generated = await mixin.generateOrThrow(minimumZeroHex)
 
-        const mixin = mixins.array[i % mixins.array.length]
+      secretsZeroHex += generated.secretZeroHex.slice(2)
 
-        const generated = await mixin.generateOrThrow(minimumZeroHex)
+      const valueBigInt = BigInt(generated.valueZeroHex)
+      const valueString = valueBigInt.toString()
 
-        secretsZeroHex += generated.secretZeroHex.slice(2)
-
-        const valueBigInt = BigInt(generated.valueZeroHex)
-        const valueString = valueBigInt.toString()
-
-        setLogs(logs => [
-          <Fragment key={crypto.randomUUID()}>
-            <div className="text-default-contrast">
-              {Locale.get(Locale.YouGeneratedX, locale)(`${valueString} sparks`)}
-            </div>
-          </Fragment>,
-          ...logs
-        ])
-      })
+      setLogs(logs => [
+        <Fragment key={crypto.randomUUID()}>
+          <div className="text-default-contrast">
+            {Locale.get(Locale.YouGeneratedX, locale)(`${valueString} sparks`)}
+          </div>
+        </Fragment>,
+        ...logs
+      ])
     }
 
-    console.log("Waiting for workers to finish")
+    const promises = new Array<Promise<void>>()
+
+    for (let i = 0; i < size; i++)
+      promises.push(generate())
 
     await Promise.all(promises)
 
     signal.throwIfAborted()
-
-    const signatureZeroHex = await account.current.viemAccount.signMessage({ message: nonceZeroHex })
 
     const headers = { "Content-Type": "application/json" }
     const body = JSON.stringify({ nonceZeroHex, secretsZeroHex, signatureZeroHex })
@@ -478,9 +472,9 @@ function Console() {
         {aborter != null
           ? <Loading className="size-5" />
           : <Outline.BoltIcon className="size-5" />}
-        {aborter != null
-          ? Locale.get(Locale.Generating, locale)
-          : Locale.get(Locale.Generate, locale)}
+        {aborter == null && Locale.get(Locale.Generate, locale)}
+        {aborter != null && aborter.signal.aborted && Locale.get(Locale.Stopping, locale)}
+        {aborter != null && !aborter.signal.aborted && Locale.get(Locale.Generating, locale)}
       </WideClickableOppositeButton>
       <ClickableContrastAnchor
         aria-disabled={aborter != null}

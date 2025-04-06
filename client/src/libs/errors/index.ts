@@ -24,14 +24,22 @@ export namespace Errors {
     return JSON.stringify(toJSON(error))
   }
 
+  function ancestor(error: unknown) {
+    if (error instanceof Error === false)
+      return error
+    if (error.cause == null)
+      return error
+    return ancestor(error.cause)
+  }
+
   export function log(error: unknown) {
-    if (error instanceof NotAnError)
+    if (ancestor(error) instanceof NotAnError)
       return
     console.error({ error })
   }
 
   export function alert(error: unknown) {
-    if (error instanceof NotAnError)
+    if (ancestor(error) instanceof NotAnError)
       return
     return globalThis.alert(toString(error))
   }
