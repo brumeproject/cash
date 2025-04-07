@@ -1,11 +1,8 @@
 // Next.js API route support: https://nextjs.org/docs/api-routes/introduction
-import { Database } from "@/mods/supabase";
-import { createClient } from "@supabase/supabase-js";
+import { supabase } from "@/mods/supabase/mods/client";
 import type { NextApiRequest, NextApiResponse } from "next";
 
-const supabase = createClient<Database>("https://vqceovbkcavejkqyqbqd.supabase.co", process.env.SUPABASE_KEY!)
-
-export default async function handler(
+export default async function events(
   req: NextApiRequest,
   res: NextApiResponse,
 ) {
