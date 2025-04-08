@@ -147,7 +147,7 @@ function Console() {
     setMinimum(event.currentTarget.value)
   }), [])
 
-  const [size, setSize] = useState("32")
+  const [size, setSize] = useState("256")
 
   const onSizeChange = useCallback((event: ChangeEvent<HTMLInputElement>) => Errors.runOrLogAndAlert(async () => {
     const sizeString = event.currentTarget.value
