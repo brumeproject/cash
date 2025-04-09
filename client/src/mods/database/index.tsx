@@ -32,6 +32,9 @@ export function DatabaseProvider(props: ChildrenProps) {
     database?.database.close()
   }, [database])
 
+  if (database == null)
+    return null
+
   return <DatabaseContext.Provider value={database}>
     {children}
   </DatabaseContext.Provider>

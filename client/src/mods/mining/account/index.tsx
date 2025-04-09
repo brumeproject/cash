@@ -9,8 +9,8 @@ import { Option } from "@hazae41/option";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { Hex, PrivateKeyAccount } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
-import { Locale } from "../../../locale";
-import { useLocaleContext } from "../../../locale/mods/context";
+import { Locale } from "../../locale";
+import { useLocaleContext } from "../../locale/mods/context";
 
 export interface WalletInfo {
   readonly privateKey: Hex

@@ -6,33 +6,36 @@ import { Dialog } from "@/libs/ui/dialog";
 import { Loading } from "@/libs/ui/loading";
 import { Locale } from "@/mods/locale";
 import { useLocaleContext } from "@/mods/locale/mods/context";
-import { AsyncStack, Deferred, Disposer } from "@hazae41/box";
+import { AsyncStack, Deferred } from "@hazae41/box";
 import { HashSubpathProvider, useCoords, useHashSubpath, usePathContext } from "@hazae41/chemin";
-import { NetMixin, NetWorker } from "@hazae41/networker";
-import { AutoPool } from "@hazae41/piscine";
-import { ChangeEvent, Fragment, JSX, useCallback, useEffect, useMemo, useState } from "react";
+import { NetMixin } from "@hazae41/networker";
+import { ChangeEvent, Fragment, useCallback } from "react";
 import { bytesToHex } from "viem";
 import { useWalletContext, WalletDialog } from "../account";
+import { useMiningContext } from "../provider";
 
-export function MiningGeneratorDialog() {
+export function MiningDialog() {
   const path = usePathContext().getOrThrow()
   const locale = useLocaleContext().getOrThrow()
   const account = useWalletContext().getOrThrow()
 
+  const {
+    settings,
+    setSettings,
+
+    logs,
+    setLogs,
+
+    aborter,
+    setAborter,
+
+    workers
+  } = useMiningContext().getOrThrow()
+
   const hash = useHashSubpath(path)
 
-  const wallet = useCoords(hash, "/wallet")
-  const settings = useCoords(hash, "/settings")
-
-  const [logs, setLogs] = useState<JSX.Element[]>([])
-
-  const workers = useMemo(() => new AutoPool<NetWorker>(async () => {
-    return Disposer.wrap(new NetWorker())
-  }, navigator.hardwareConcurrency - 1), [])
-
-  useEffect(() => () => {
-    using _ = workers
-  }, [workers])
+  const $wallet = useCoords(hash, "/wallet")
+  const $settings = useCoords(hash, "/settings")
 
   const generateOrThrow = useCallback(async (size: number, minimum: bigint, signal: AbortSignal) => {
     const contractZeroHex = "0xabc755011B810fDC31F3504f0F855cadFcb2685A".toLowerCase()
@@ -127,13 +130,18 @@ export function MiningGeneratorDialog() {
     while (!signal.aborted) claimOrThrow(await generateOrThrow(size, minimum, signal), signal).catch(Errors.logAndAlert)
   }, [generateOrThrow, claimOrThrow])
 
-  const [loop, setLoop] = useState(false)
+  const {
+    mode = "stop",
+    minimum = "1000000",
+    size = "128"
+  } = settings ?? {}
 
-  const onLoopChange = useCallback((event: ChangeEvent<HTMLInputElement>) => Errors.runOrLogAndAlert(async () => {
-    setLoop(event.currentTarget.checked)
+  const onModeChange = useCallback((event: ChangeEvent<HTMLInputElement>) => Errors.runOrLogAndAlert(async () => {
+    if (event.currentTarget.checked)
+      setSettings(x => ({ ...x, mode: "loop" }))
+    else
+      setSettings(x => ({ ...x, mode: "stop" }))
   }), [])
-
-  const [minimum, setMinimum] = useState("1000000")
 
   const onMinimumChange = useCallback((event: ChangeEvent<HTMLInputElement>) => Errors.runOrLogAndAlert(async () => {
     const minimumString = event.currentTarget.value
@@ -142,10 +150,8 @@ export function MiningGeneratorDialog() {
     if (minimumBigInt < 1n)
       throw new UIError("Minimum must be greater than or equals to 1")
 
-    setMinimum(event.currentTarget.value)
+    setSettings(x => ({ ...x, minimum: minimumString }))
   }), [])
-
-  const [size, setSize] = useState("256")
 
   const onSizeChange = useCallback((event: ChangeEvent<HTMLInputElement>) => Errors.runOrLogAndAlert(async () => {
     const sizeString = event.currentTarget.value
@@ -154,10 +160,8 @@ export function MiningGeneratorDialog() {
     if (sizeNumber < 1 || sizeNumber > 2048)
       throw new UIError("Size must be between 1 and 2048")
 
-    setSize(sizeString)
+    setSettings(x => ({ ...x, size: sizeString }))
   }), [])
-
-  const [aborter, setAborter] = useState<AbortController>()
 
   const onGenerateClick = useCallback(() => Errors.runOrLogAndAlert(async () => {
     if (aborter != null)
@@ -178,14 +182,14 @@ export function MiningGeneratorDialog() {
       const sizeString = size
       const sizeNumber = Number(sizeString)
 
-      if (!loop)
+      if (mode === "stop")
         await generateAndClaimOrThrow(sizeNumber, minimumBigInt, signal)
       else
         await generateAndAsyncClaimOrLogAndAlertInLoopOrThrow(sizeNumber, minimumBigInt, signal)
 
       //
     }
-  }), [aborter, loop, size, minimum, generateAndClaimOrThrow, generateAndAsyncClaimOrLogAndAlertInLoopOrThrow])
+  }), [aborter, mode, size, minimum, generateAndClaimOrThrow, generateAndAsyncClaimOrLogAndAlertInLoopOrThrow])
 
   return <>
     <h1 className="text-2xl font-medium">
@@ -306,8 +310,8 @@ export function MiningGeneratorDialog() {
             {Locale.get(Locale.Enabled, locale)}
             <div className="grow" />
             <input type="checkbox"
-              onChange={onLoopChange}
-              checked={loop} />
+              onChange={onModeChange}
+              checked={mode === "loop"} />
           </label>
           <div className="h-4" />
           <div className="font-medium">
@@ -490,18 +494,18 @@ export function MiningGeneratorDialog() {
       </WideClickableOppositeButton>
       <ClickableContrastAnchor
         aria-disabled={aborter != null}
-        onKeyDown={aborter == null ? settings.onKeyDown : undefined}
-        onClick={aborter == null ? settings.onClick : undefined}
-        href={aborter == null ? settings.href : undefined}>
+        onKeyDown={aborter == null ? $settings.onKeyDown : undefined}
+        onClick={aborter == null ? $settings.onClick : undefined}
+        href={aborter == null ? $settings.href : undefined}>
         <div className="p-1">
           <Outline.EllipsisVerticalIcon className="size-5" />
         </div>
       </ClickableContrastAnchor>
       <ClickableContrastAnchor
         aria-disabled={aborter != null}
-        onKeyDown={aborter == null ? wallet.onKeyDown : undefined}
-        onClick={aborter == null ? wallet.onClick : undefined}
-        href={aborter == null ? wallet.href : undefined}>
+        onKeyDown={aborter == null ? $wallet.onKeyDown : undefined}
+        onClick={aborter == null ? $wallet.onClick : undefined}
+        href={aborter == null ? $wallet.href : undefined}>
         <div className="p-1">
           <Outline.WalletIcon className="size-5" />
         </div>

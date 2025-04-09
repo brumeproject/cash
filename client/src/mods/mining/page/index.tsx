@@ -7,10 +7,10 @@ import Head from "next/head";
 import { useMemo } from "react";
 import { Locale } from "../../locale";
 import { useLocaleContext } from "../../locale/mods/context";
-import { WalletProvider } from "../generator/account";
-import { MiningGeneratorDialog } from "../generator/dialog";
+import { WalletProvider } from "../account";
+import { MiningDialog } from "../dialog";
 
-export function Page() {
+export function MiningPage() {
   const path = usePathContext().getOrThrow()
   const locale = useLocaleContext().getOrThrow()
 
@@ -28,7 +28,7 @@ export function Page() {
 
   const display = useWriter(sentences)
 
-  return <div id="root" className="p-safe h-full w-full flex flex-col overflow-y-scroll animate-opacity-in">
+  return <>
     <Head>
       <title>Brume Cash</title>
     </Head>
@@ -36,7 +36,7 @@ export function Page() {
       {hash.url.pathname === "/generate" &&
         <Dialog>
           <WalletProvider>
-            <MiningGeneratorDialog />
+            <MiningDialog />
           </WalletProvider>
         </Dialog>}
     </HashSubpathProvider>
@@ -78,5 +78,5 @@ export function Page() {
         </span>
       </div>
     </div>
-  </div>
+  </>
 }

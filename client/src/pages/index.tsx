@@ -1,8 +1,10 @@
 import { Localizer } from "@/mods/locale/mods/context";
-import { Page } from "@/mods/mining/page";
+import { MiningPage } from "@/mods/mining/page";
 
 export default function Home() {
   return <Localizer value={undefined}>
-    <Page />
+    <div id="root" className="p-safe h-full w-full flex flex-col overflow-y-scroll animate-opacity-in">
+      <MiningPage />
+    </div>
   </Localizer>
 }
