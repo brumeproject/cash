@@ -7,9 +7,9 @@ import Head from "next/head";
 import { useMemo } from "react";
 import { Locale } from "../../locale";
 import { useLocaleContext } from "../../locale/mods/context";
-import { WalletProvider } from "../account";
 import { MiningDialog } from "../dialog";
 import { MiningProvider } from "../provider";
+import { WalletProvider } from "../wallet";
 
 export function MiningPage() {
   const path = usePathContext().getOrThrow()

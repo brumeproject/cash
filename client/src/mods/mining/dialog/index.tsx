@@ -11,8 +11,8 @@ import { HashSubpathProvider, useCoords, useHashSubpath, usePathContext } from "
 import { NetMixin } from "@hazae41/networker";
 import { ChangeEvent, Fragment, useCallback } from "react";
 import { bytesToHex } from "viem";
-import { useWalletContext, WalletDialog } from "../account";
 import { useMiningContext } from "../provider";
+import { useWalletContext, WalletDialog } from "../wallet";
 
 export function MiningDialog() {
   const path = usePathContext().getOrThrow()
@@ -105,7 +105,7 @@ export function MiningDialog() {
     const headers = { "Content-Type": "application/json" }
     const body = JSON.stringify({ nonceZeroHex, secretsZeroHex, signatureZeroHex })
 
-    const response = await fetch("https://api.cash.brume.money/api/generate", { method: "POST", headers, body, signal })
+    const response = await fetch("https://api.cash.brume.money/api/v0/generate", { method: "POST", headers, body, signal })
 
     if (!response.ok)
       throw new UIError("Could not claim")

@@ -116,7 +116,7 @@ export function WalletDialog() {
   const [balance, setBalance] = useState<string>()
 
   const getAndSetBalanceOrLogAndAlert = useCallback(() => Errors.runOrLogAndAlert(async () => {
-    const response = await fetch(`https://api.cash.brume.money/api/balance?address=${account.current.viemAccount.address.toLowerCase()}`)
+    const response = await fetch(`https://api.cash.brume.money/api/v0/balance?address=${account.current.viemAccount.address.toLowerCase()}`)
 
     if (!response.ok)
       throw new Error("Failed to fetch balance")
