@@ -9,6 +9,7 @@ import { Locale } from "../../locale";
 import { useLocaleContext } from "../../locale/mods/context";
 import { WalletProvider } from "../account";
 import { MiningDialog } from "../dialog";
+import { MiningProvider } from "../provider";
 
 export function MiningPage() {
   const path = usePathContext().getOrThrow()
@@ -28,7 +29,7 @@ export function MiningPage() {
 
   const display = useWriter(sentences)
 
-  return <>
+  return <MiningProvider>
     <Head>
       <title>Brume Cash</title>
     </Head>
@@ -78,5 +79,5 @@ export function MiningPage() {
         </span>
       </div>
     </div>
-  </>
+  </MiningProvider>
 }

@@ -4,7 +4,6 @@ import "@/styles/index.css";
 
 import { Nullable } from "@/libs/nullable";
 import { DatabaseProvider } from "@/mods/database";
-import { MiningProvider } from "@/mods/mining/provider";
 import { HashPathProvider } from "@hazae41/chemin";
 import { Immutable } from "@hazae41/immutable";
 import type { AppProps } from "next/app";
@@ -44,9 +43,7 @@ export default function App({ Component, pageProps }: AppProps) {
 
   return <HashPathProvider>
     <DatabaseProvider>
-      <MiningProvider>
-        <Component {...pageProps} />
-      </MiningProvider>
+      <Component {...pageProps} />
     </DatabaseProvider>
   </HashPathProvider>
 }
