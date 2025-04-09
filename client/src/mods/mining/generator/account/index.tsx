@@ -3,14 +3,15 @@ import { Nullable } from "@/libs/nullable";
 import { ChildrenProps } from "@/libs/react/props/children";
 import { WideClickableContrastButton } from "@/libs/ui/buttons";
 import { Dialog } from "@/libs/ui/dialog";
+import { useDatabaseContext } from "@/mods/database";
 import { HashSubpathProvider, useHashSubpath, usePathContext } from "@hazae41/chemin";
 import { Option } from "@hazae41/option";
 import { Database } from "@hazae41/serac";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { Hex, PrivateKeyAccount } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
-import { Locale } from "../locale";
-import { useLocaleContext } from "../locale/mods/context";
+import { Locale } from "../../../locale";
+import { useLocaleContext } from "../../../locale/mods/context";
 
 export interface WalletInfo {
   readonly privateKey: Hex
@@ -32,25 +33,11 @@ export function useWalletContext() {
 
 export function WalletProvider(props: ChildrenProps) {
   const { children } = props
-
-  const [database, setDatabase] = useState<Database>()
-
-  const getAndSetDatabase = useCallback(() => Errors.runOrLogAndAlert(async () => {
-    const database = await Database.openOrThrow("meta", 1, () => { })
-
-    for await (const key of database.collectOrThrow())
-      await database.deleteOrThrow(key)
-
-    setDatabase(database)
-  }), [])
-
-  useEffect(() => {
-    getAndSetDatabase()
-  }, [])
+  const database = useDatabaseContext().getOrThrow()
 
   const [current, setCurrent] = useState<WalletInfo>()
 
-  const getAndSetAccount = useCallback(async (database: Database) => {
+  const getAndSetAccountOrLogAndAlert = useCallback((database: Database) => Errors.runOrLogAndAlert(async () => {
     const stalePrivateKey = await database.getOrThrow<Hex>("account")
 
     if (stalePrivateKey != null) {
@@ -68,12 +55,12 @@ export function WalletProvider(props: ChildrenProps) {
     const viemAccount = privateKeyToAccount(privateKey)
 
     setCurrent({ viemAccount, privateKey })
-  }, [database])
+  }), [database])
 
   useEffect(() => {
     if (database == null)
       return
-    getAndSetAccount(database).catch(Errors.logAndAlert)
+    getAndSetAccountOrLogAndAlert(database)
   }, [database])
 
   const setOrThrow = useCallback(async (privateKey: Hex) => {
@@ -129,7 +116,7 @@ export function WalletDialog() {
 
   const [balance, setBalance] = useState<string>()
 
-  const getBalanceOrThrow = useCallback(async () => {
+  const getAndSetBalanceOrLogAndAlert = useCallback(() => Errors.runOrLogAndAlert(async () => {
     const response = await fetch(`https://api.cash.brume.money/api/balance?address=${account.current.viemAccount.address.toLowerCase()}`)
 
     if (!response.ok)
@@ -138,10 +125,10 @@ export function WalletDialog() {
     const data = await response.json()
 
     setBalance(data)
-  }, [account])
+  }), [account])
 
   useEffect(() => {
-    getBalanceOrThrow().catch(Errors.logAndAlert)
+    getAndSetBalanceOrLogAndAlert()
   }, [account])
 
   return <Dialog>

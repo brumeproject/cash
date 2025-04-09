@@ -1,6 +1,6 @@
 import { Locale } from "@/mods/locale"
 import { Localizer } from "@/mods/locale/mods/context"
-import { Page } from "@/mods/page"
+import { Page } from "@/mods/mining/page"
 
 export interface Params {
   readonly locale: string

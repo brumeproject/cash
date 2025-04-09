@@ -1,28 +1,20 @@
 import { Errors, NotAnError, UIError } from "@/libs/errors";
 import { Outline } from "@/libs/heroicons";
-import { ClickableContrastAnchor, ClickableOppositeAnchor, TextAnchor } from "@/libs/ui/anchors";
+import { ClickableContrastAnchor } from "@/libs/ui/anchors";
 import { WideClickableOppositeButton } from "@/libs/ui/buttons";
 import { Dialog } from "@/libs/ui/dialog";
 import { Loading } from "@/libs/ui/loading";
-import { useWriter } from "@/libs/writer";
-import { AsyncStack, Disposer } from "@hazae41/box";
+import { Locale } from "@/mods/locale";
+import { useLocaleContext } from "@/mods/locale/mods/context";
+import { AsyncStack, Deferred, Disposer } from "@hazae41/box";
 import { HashSubpathProvider, useCoords, useHashSubpath, usePathContext } from "@hazae41/chemin";
 import { NetMixin, NetWorker } from "@hazae41/networker";
 import { AutoPool } from "@hazae41/piscine";
-import Head from "next/head";
 import { ChangeEvent, Fragment, JSX, useCallback, useEffect, useMemo, useState } from "react";
 import { bytesToHex } from "viem";
-import { WalletDialog, useWalletContext } from "../account";
-import { Locale } from "../locale";
-import { useLocaleContext } from "../locale/mods/context";
+import { useWalletContext, WalletDialog } from "../account";
 
-export interface Claimable {
-  readonly secretsZeroHex: string
-  readonly signatureZeroHex: string
-  readonly nonceZeroHex: string
-}
-
-function Console() {
+export function MiningGeneratorDialog() {
   const path = usePathContext().getOrThrow()
   const locale = useLocaleContext().getOrThrow()
   const account = useWalletContext().getOrThrow()
@@ -42,7 +34,7 @@ function Console() {
     using _ = workers
   }, [workers])
 
-  const generate = useCallback(async (size: number, minimum: bigint, signal: AbortSignal) => {
+  const generateOrThrow = useCallback(async (size: number, minimum: bigint, signal: AbortSignal) => {
     const contractZeroHex = "0xabc755011B810fDC31F3504f0F855cadFcb2685A".toLowerCase()
     const receiverZeroHex = account.current.viemAccount.address.toLowerCase()
 
@@ -98,7 +90,13 @@ function Console() {
     return { nonceZeroHex, secretsZeroHex, signatureZeroHex }
   }, [account, workers])
 
-  const claim = useCallback(async (data: Claimable, signal: AbortSignal) => {
+  interface Claimable {
+    readonly secretsZeroHex: string
+    readonly signatureZeroHex: string
+    readonly nonceZeroHex: string
+  }
+
+  const claimOrThrow = useCallback(async (data: Claimable, signal: AbortSignal) => {
     const { secretsZeroHex, signatureZeroHex, nonceZeroHex } = data
 
     const headers = { "Content-Type": "application/json" }
@@ -121,13 +119,13 @@ function Console() {
     ])
   }, [])
 
-  const generateAndStop = useCallback(async (size: number, minimum: bigint, signal: AbortSignal) => {
-    await claim(await generate(size, minimum, signal), signal)
-  }, [generate])
+  const generateAndClaimOrThrow = useCallback(async (size: number, minimum: bigint, signal: AbortSignal) => {
+    await claimOrThrow(await generateOrThrow(size, minimum, signal), signal)
+  }, [generateOrThrow])
 
-  const generateAndLoop = useCallback(async (size: number, minimum: bigint, signal: AbortSignal) => {
-    while (!signal.aborted) claim(await generate(size, minimum, signal), signal).catch(Errors.logAndAlert)
-  }, [generate])
+  const generateAndAsyncClaimOrLogAndAlertInLoopOrThrow = useCallback(async (size: number, minimum: bigint, signal: AbortSignal) => {
+    while (!signal.aborted) claimOrThrow(await generateOrThrow(size, minimum, signal), signal).catch(Errors.logAndAlert)
+  }, [generateOrThrow])
 
   const [loop, setLoop] = useState(false)
 
@@ -168,28 +166,26 @@ function Console() {
     {
       const aborter = new AbortController()
 
-      try {
-        const { signal } = aborter
+      const { signal } = aborter
 
-        setAborter(aborter)
+      setAborter(aborter)
 
-        const minimumString = minimum
-        const minimumBigInt = BigInt(minimumString)
+      using _ = new Deferred(() => setAborter(undefined))
 
-        const sizeString = size
-        const sizeNumber = Number(sizeString)
+      const minimumString = minimum
+      const minimumBigInt = BigInt(minimumString)
 
-        if (!loop)
-          await generateAndStop(sizeNumber, minimumBigInt, signal)
-        else
-          await generateAndLoop(sizeNumber, minimumBigInt, signal)
+      const sizeString = size
+      const sizeNumber = Number(sizeString)
 
-        //
-      } finally {
-        setAborter(undefined)
-      }
+      if (!loop)
+        await generateAndClaimOrThrow(sizeNumber, minimumBigInt, signal)
+      else
+        await generateAndAsyncClaimOrLogAndAlertInLoopOrThrow(sizeNumber, minimumBigInt, signal)
+
+      //
     }
-  }), [aborter, loop, size, minimum, generateAndStop, generateAndLoop])
+  }), [aborter, loop, size, minimum, generateAndClaimOrThrow, generateAndAsyncClaimOrLogAndAlertInLoopOrThrow])
 
   return <>
     <h1 className="text-2xl font-medium">
@@ -512,73 +508,4 @@ function Console() {
       </ClickableContrastAnchor>
     </div>
   </>
-}
-
-export function Page() {
-  const path = usePathContext().getOrThrow()
-  const locale = useLocaleContext().getOrThrow()
-
-  const hash = useHashSubpath(path)
-
-  const generate = useCoords(hash, "/generate")
-
-  const sentences = useMemo(() => [
-    Locale.get(Locale.MonetizeAnyService, locale),
-    Locale.get(Locale.MonetizeAnyWebsite, locale),
-    Locale.get(Locale.MonetizeAnyApp, locale),
-    Locale.get(Locale.MonetizeAnyAPI, locale),
-    Locale.get(Locale.MonetizeAnyContent, locale),
-  ], [])
-
-  const display = useWriter(sentences)
-
-  return <div id="root" className="p-safe h-full w-full flex flex-col overflow-y-scroll animate-opacity-in">
-    <Head>
-      <title>Brume Cash</title>
-    </Head>
-    <HashSubpathProvider>
-      {hash.url.pathname === "/generate" &&
-        <Dialog>
-          <Console />
-        </Dialog>}
-    </HashSubpathProvider>
-    <div className="p-4 grow w-full m-auto max-w-3xl flex flex-col">
-      <div className="h-[max(24rem,100dvh_-_16rem)] flex-none flex flex-col items-center">
-        <div className="grow" />
-        <h1 className="text-center text-6xl font-medium">
-          {display}
-        </h1>
-        <div className="h-4" />
-        <div className="text-center text-default-contrast text-2xl">
-          {Locale.get(Locale.MakeYourUsersPayAnonymouslyWithTheirComputation, locale)}
-        </div>
-        <div className="grow" />
-        <div className="flex items-center">
-          <ClickableOppositeAnchor
-            onKeyDown={generate.onKeyDown}
-            onClick={generate.onClick}
-            href={generate.href}>
-            <Outline.BoltIcon className="size-5" />
-            {Locale.get(Locale.Try, locale)}
-          </ClickableOppositeAnchor>
-        </div>
-        <div className="grow" />
-        <div className="grow" />
-      </div>
-      <div className="h-[50vh]" />
-      <div className="p-4 flex items-center justify-center gap-2">
-        <TextAnchor
-          target="_blank" rel="noreferrer"
-          href="https://brume.money">
-          {Locale.get(Locale.MadeByCypherpunks, locale)}
-        </TextAnchor>
-        <span>
-          ·
-        </span>
-        <span>
-          v{process.env.VERSION}
-        </span>
-      </div>
-    </div>
-  </div>
 }

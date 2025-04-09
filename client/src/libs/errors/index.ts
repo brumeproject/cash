@@ -73,7 +73,7 @@ export namespace Errors {
     }
   }
 
-  export function runAndLogAndAlertSync<T>(callback: () => T) {
+  export function runOrLogAndAlertSync<T>(callback: () => T) {
     try {
       return callback()
     } catch (e: unknown) {
