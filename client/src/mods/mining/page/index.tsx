@@ -24,7 +24,7 @@ export function Page() {
     Locale.get(Locale.MonetizeAnyApp, locale),
     Locale.get(Locale.MonetizeAnyAPI, locale),
     Locale.get(Locale.MonetizeAnyContent, locale),
-  ], [])
+  ], [locale])
 
   const display = useWriter(sentences)
 

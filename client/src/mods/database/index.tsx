@@ -26,7 +26,7 @@ export function DatabaseProvider(props: ChildrenProps) {
 
   useEffect(() => {
     open()
-  }, [])
+  }, [open])
 
   useEffect(() => () => {
     database?.database.close()

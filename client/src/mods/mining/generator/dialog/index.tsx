@@ -88,7 +88,7 @@ export function MiningGeneratorDialog() {
     signal.throwIfAborted()
 
     return { nonceZeroHex, secretsZeroHex, signatureZeroHex }
-  }, [account, workers])
+  }, [account, workers, locale])
 
   interface Claimable {
     readonly secretsZeroHex: string
@@ -117,15 +117,15 @@ export function MiningGeneratorDialog() {
       </Fragment>,
       ...logs
     ])
-  }, [])
+  }, [locale])
 
   const generateAndClaimOrThrow = useCallback(async (size: number, minimum: bigint, signal: AbortSignal) => {
     await claimOrThrow(await generateOrThrow(size, minimum, signal), signal)
-  }, [generateOrThrow])
+  }, [generateOrThrow, claimOrThrow])
 
   const generateAndAsyncClaimOrLogAndAlertInLoopOrThrow = useCallback(async (size: number, minimum: bigint, signal: AbortSignal) => {
     while (!signal.aborted) claimOrThrow(await generateOrThrow(size, minimum, signal), signal).catch(Errors.logAndAlert)
-  }, [generateOrThrow])
+  }, [generateOrThrow, claimOrThrow])
 
   const [loop, setLoop] = useState(false)
 

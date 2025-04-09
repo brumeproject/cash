@@ -6,7 +6,6 @@ import { Dialog } from "@/libs/ui/dialog";
 import { useDatabaseContext } from "@/mods/database";
 import { HashSubpathProvider, useHashSubpath, usePathContext } from "@hazae41/chemin";
 import { Option } from "@hazae41/option";
-import { Database } from "@hazae41/serac";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { Hex, PrivateKeyAccount } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
@@ -37,7 +36,7 @@ export function WalletProvider(props: ChildrenProps) {
 
   const [current, setCurrent] = useState<WalletInfo>()
 
-  const getAndSetAccountOrLogAndAlert = useCallback((database: Database) => Errors.runOrLogAndAlert(async () => {
+  const getAndSetAccountOrLogAndAlert = useCallback(() => Errors.runOrLogAndAlert(async () => {
     const stalePrivateKey = await database.getOrThrow<Hex>("account")
 
     if (stalePrivateKey != null) {
@@ -60,8 +59,8 @@ export function WalletProvider(props: ChildrenProps) {
   useEffect(() => {
     if (database == null)
       return
-    getAndSetAccountOrLogAndAlert(database)
-  }, [database])
+    getAndSetAccountOrLogAndAlert()
+  }, [database, getAndSetAccountOrLogAndAlert])
 
   const setOrThrow = useCallback(async (privateKey: Hex) => {
     if (database == null)
@@ -129,7 +128,7 @@ export function WalletDialog() {
 
   useEffect(() => {
     getAndSetBalanceOrLogAndAlert()
-  }, [account])
+  }, [getAndSetBalanceOrLogAndAlert])
 
   return <Dialog>
     <HashSubpathProvider>
