@@ -121,9 +121,9 @@ export function WalletDialog() {
     if (!response.ok)
       throw new Error("Failed to fetch balance")
 
-    const data = await response.json()
+    const { balance } = await response.json()
 
-    setBalance(data)
+    setBalance(balance)
   }), [account])
 
   useEffect(() => {

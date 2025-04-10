@@ -2,7 +2,7 @@
 import { supabase } from "@/mods/supabase/mods/client";
 import type { NextApiRequest, NextApiResponse } from "next";
 
-export default async function balance(
+export default async function account(
   req: NextApiRequest,
   res: NextApiResponse,
 ) {
@@ -36,7 +36,5 @@ export default async function balance(
   if (account == null)
     return void res.status(200).setHeaders(headers).json("0")
 
-  const { balance } = account
-
-  res.status(200).setHeaders(headers).json(balance);
+  res.status(200).setHeaders(headers).json(account);
 }

@@ -70,7 +70,6 @@ export default async function generate(
   if (req.method !== "POST")
     return void res.status(405).setHeaders(headers).end()
 
-  const contractZeroHex = "0xabc755011B810fDC31F3504f0F855cadFcb2685A"
   const nonceZeroHex = z.string().asOrThrow(req.body.nonceZeroHex).toLowerCase()
   const secretsZeroHex = z.string().asOrThrow(req.body.secretsZeroHex).toLowerCase()
   const signatureZeroHex = z.string().asOrThrow(req.body.signatureZeroHex).toLowerCase()
@@ -78,46 +77,55 @@ export default async function generate(
   if (secretsZeroHex.length > (2 + (64 * 2048)))
     throw new Error("Too many secrets")
 
-  const receiverZeroHex = await recoverMessageAddress({ message: nonceZeroHex, signature: signatureZeroHex as `0x${string}` }).then(x => x.toLowerCase())
+  const typeZeroHex = "0x67656e6572617465"
+  const chainZeroHex = "0x6272756d65"
 
   {
-    await CashServerWasm.initBundled()
+    const message = JSON.stringify({ typeZeroHex, chainZeroHex, nonceZeroHex, secretsZeroHex })
+    const signature = signatureZeroHex as `0x${string}`
 
-    const contractBase16 = contractZeroHex.slice(2).padStart(64, "0")
-    using contractMemory = CashServerWasm.base16_decode_mixed(contractBase16)
-
-    const nonceBase16 = nonceZeroHex.slice(2).padStart(64, "0")
-    using nonceMemory = CashServerWasm.base16_decode_mixed(nonceBase16)
-
-    const receiverBase16 = receiverZeroHex.slice(2).padStart(64, "0")
-    using receiverMemory = CashServerWasm.base16_decode_mixed(receiverBase16)
-
-    using mixinWasm = new CashServerWasm.NetworkMixin(contractMemory, receiverMemory, nonceMemory)
-
-    const secretsBase16 = secretsZeroHex.slice(2)
-    using secretsMemory = CashServerWasm.base16_decode_mixed(secretsBase16)
-
-    using valueMemory = mixinWasm.verify_secrets(secretsMemory)
-    const valueRawHex = CashServerWasm.base16_encode_lower(valueMemory)
-    const valueZeroHex = `0x${valueRawHex}`
-    const valueBigInt = BigInt(valueZeroHex)
+    const receiverZeroHex = await recoverMessageAddress({ message, signature }).then(x => x.toLowerCase())
 
     {
-      const countNumber = (secretsZeroHex.length - 2) / 64
-      const countString = countNumber.toString()
+      await CashServerWasm.initBundled()
 
-      const address = receiverZeroHex
-      const value = valueBigInt.toString()
-      const count = countString
-      const nonce = nonceZeroHex
-      const secrets = secretsZeroHex
+      const chainBase16 = chainZeroHex.slice(2).padStart(64, "0")
+      using chainMemory = CashServerWasm.base16_decode_mixed(chainBase16)
 
-      const { data, error } = await supabase.rpc("generate", { address, value, count, nonce, secrets })
+      const nonceBase16 = nonceZeroHex.slice(2).padStart(64, "0")
+      using nonceMemory = CashServerWasm.base16_decode_mixed(nonceBase16)
 
-      if (error != null)
-        throw new Error("Database error", { cause: error.message })
+      const receiverBase16 = receiverZeroHex.slice(2).padStart(64, "0")
+      using receiverMemory = CashServerWasm.base16_decode_mixed(receiverBase16)
 
-      res.status(200).setHeaders(headers).json(data);
+      using mixinWasm = new CashServerWasm.NetworkMixin(chainMemory, receiverMemory, nonceMemory)
+
+      const secretsBase16 = secretsZeroHex.slice(2)
+      using secretsMemory = CashServerWasm.base16_decode_mixed(secretsBase16)
+
+      using valueMemory = mixinWasm.verify_secrets(secretsMemory)
+      const valueRawHex = CashServerWasm.base16_encode_lower(valueMemory)
+      const valueZeroHex = `0x${valueRawHex}`
+      const valueBigInt = BigInt(valueZeroHex)
+
+      {
+        const countNumber = (secretsZeroHex.length - 2) / 64
+        const countString = countNumber.toString()
+
+        const address = receiverZeroHex
+        const value = valueBigInt.toString()
+        const count = countString
+        const nonce = nonceZeroHex
+        const secrets = secretsZeroHex
+        const signature = signatureZeroHex
+
+        const { data, error } = await supabase.rpc("generate", { address, value, count, secrets, nonce, chain, signature })
+
+        if (error != null)
+          throw new Error("Database error", { cause: error.message })
+
+        res.status(200).setHeaders(headers).json(data);
+      }
     }
   }
 }

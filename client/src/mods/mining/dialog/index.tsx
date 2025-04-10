@@ -9,8 +9,7 @@ import { useLocaleContext } from "@/mods/locale/mods/context";
 import { AsyncStack, Deferred } from "@hazae41/box";
 import { HashSubpathProvider, useCoords, useHashSubpath, usePathContext } from "@hazae41/chemin";
 import { NetMixin } from "@hazae41/networker";
-import { ChangeEvent, Fragment, useCallback } from "react";
-import { bytesToHex } from "viem";
+import { ChangeEvent, Fragment, useCallback, useEffect, useRef } from "react";
 import { useMiningContext } from "../provider";
 import { useWalletContext, WalletDialog } from "../wallet";
 
@@ -37,17 +36,36 @@ export function MiningDialog() {
   const $wallet = useCoords(hash, "/wallet")
   const $settings = useCoords(hash, "/settings")
 
+  const nonce = useRef<bigint>(0n)
+
+  const getNonceOrThrow = useCallback(async () => {
+    const response = await fetch(`https://api.cash.brume.money/api/v0/account?address=${account.current.viemAccount.address.toLowerCase()}`)
+
+    if (!response.ok)
+      throw new Error("Failed to fetch nonce")
+
+    const data = await response.json()
+
+    return BigInt(data.nonce)
+  }, [account])
+
+  const getAndSetNonceOrLogAndAlert = useCallback(() => Errors.runOrLogAndAlert(async () => {
+    nonce.current = await getNonceOrThrow()
+  }), [account])
+
+  useEffect(() => {
+    getAndSetNonceOrLogAndAlert()
+  }, [getAndSetNonceOrLogAndAlert])
+
   const generateOrThrow = useCallback(async (size: number, minimum: bigint, signal: AbortSignal) => {
     const contractZeroHex = "0xabc755011B810fDC31F3504f0F855cadFcb2685A".toLowerCase()
     const receiverZeroHex = account.current.viemAccount.address.toLowerCase()
 
-    const nonceBytes = crypto.getRandomValues(new Uint8Array(32))
-    const nonceZeroHex = bytesToHex(nonceBytes)
+    const nonceBigInt = nonce.current
+    const nonceZeroHex = `0x${nonceBigInt.toString(16)}`
 
     const minimumBigInt = minimum
     const minimumZeroHex = `0x${minimumBigInt.toString(16)}`
-
-    const signatureZeroHex = await account.current.viemAccount.signMessage({ message: nonceZeroHex })
 
     const premixins = new Array<Promise<NetMixin>>()
 
@@ -90,17 +108,25 @@ export function MiningDialog() {
 
     signal.throwIfAborted()
 
+    const typeZeroHex = "0x67656e6572617465"
+    const chainZeroHex = "0x6272756d65"
+
+    const message = JSON.stringify({ typeZeroHex, chainZeroHex, nonceZeroHex, secretsZeroHex })
+    const signature = await account.current.viemAccount.signMessage({ message })
+
+    const signatureZeroHex = signature
+
     return { nonceZeroHex, secretsZeroHex, signatureZeroHex }
   }, [account, workers, locale])
 
   interface Claimable {
+    readonly nonceZeroHex: string
     readonly secretsZeroHex: string
     readonly signatureZeroHex: string
-    readonly nonceZeroHex: string
   }
 
   const claimOrThrow = useCallback(async (data: Claimable, signal: AbortSignal) => {
-    const { secretsZeroHex, signatureZeroHex, nonceZeroHex } = data
+    const { nonceZeroHex, secretsZeroHex, signatureZeroHex } = data
 
     const headers = { "Content-Type": "application/json" }
     const body = JSON.stringify({ nonceZeroHex, secretsZeroHex, signatureZeroHex })
@@ -175,6 +201,8 @@ export function MiningDialog() {
       setAborter(aborter)
 
       using _ = new Deferred(() => setAborter(undefined))
+
+      const nonce = await getNonceOrThrow()
 
       const minimumString = minimum
       const minimumBigInt = BigInt(minimumString)
