@@ -1,13 +1,14 @@
-import { Errors } from "@/libs/errors";
+import { Errors, UIError } from "@/libs/errors";
 import { Nullable } from "@/libs/nullable";
 import { ChildrenProps } from "@/libs/react/props/children";
 import { WideClickableContrastButton } from "@/libs/ui/buttons";
 import { Dialog } from "@/libs/ui/dialog";
+import { API } from "@/mods/api";
 import { useDatabaseContext } from "@/mods/database";
 import { HashSubpathProvider, useHashSubpath, usePathContext } from "@hazae41/chemin";
 import { Option } from "@hazae41/option";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { Hex, PrivateKeyAccount } from "viem";
+import { Hex, isAddress, PrivateKeyAccount } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { Locale } from "../../locale";
 import { useLocaleContext } from "../../locale/mods/context";
@@ -113,24 +114,59 @@ export function WalletDialog() {
     await wallet.setOrThrow(privateKey as Hex)
   }), [wallet])
 
-  const [balance, setBalance] = useState<string>()
+  const [account, setAccount] = useState<{ balance: number, nonce: number }>()
 
-  const getAndSetBalanceOrLogAndAlert = useCallback(() => Errors.runOrLogAndAlert(async () => {
-    const response = await fetch(`https://api.cash.brume.money/api/v0/account?address=${wallet.current.viemAccount.address.toLowerCase()}`)
+  const getAndSetAccountOrLogAndAlert = useCallback(() => Errors.runOrLogAndAlert(async () => {
+    const response = await fetch(new URL(`/api/v0/account?address=${wallet.current.viemAccount.address.toLowerCase()}`, API))
 
     if (!response.ok)
       throw new Error("Failed to fetch balance")
 
-    const { balance } = await response.json()
-
-    setBalance(balance)
+    setAccount(await response.json())
   }), [wallet])
 
   useEffect(() => {
-    getAndSetBalanceOrLogAndAlert()
-  }, [getAndSetBalanceOrLogAndAlert])
+    getAndSetAccountOrLogAndAlert()
+  }, [getAndSetAccountOrLogAndAlert])
 
-  return <Dialog>
+  const onSendClick = useCallback(() => Errors.runOrLogAndAlert(async () => {
+    if (account == null)
+      return
+
+    const receiver = prompt("Enter the address to send to")
+
+    if (receiver == null)
+      return
+    if (!isAddress(receiver))
+      throw new UIError("Invalid address")
+
+    const value = prompt("Enter the amount to send")
+
+    if (value == null)
+      return
+
+    const version = "422827093349"
+    const type = "transfer"
+    const nonce = String(account.nonce)
+    const data = { receiver }
+
+    const message = JSON.stringify({ version, type, nonce, data })
+    const signature = await wallet.current.viemAccount.signMessage({ message })
+
+    const headers = { "Content-Type": "application/json" }
+    const body = JSON.stringify({ version, type, nonce, receiver, value, signature })
+
+    const response = await fetch(new URL("/api/v0/transfer", API), { method: "POST", headers, body })
+
+    if (!response.ok)
+      throw new UIError("Could not claim")
+
+    alert("Transfer successful")
+
+    getAndSetAccountOrLogAndAlert()
+  }), [wallet, account])
+
+  return <>
     <HashSubpathProvider>
       {hash.url.pathname === "/connect" &&
         <Dialog>
@@ -138,17 +174,14 @@ export function WalletDialog() {
             {Locale.get(Locale.Connection, locale)}
           </h1>
           <div className="h-4" />
-          <WideClickableContrastButton>
-            Generate a new wallet
-          </WideClickableContrastButton>
-          <div className="h-2" />
-          <WideClickableContrastButton>
-            Import an existing wallet
-          </WideClickableContrastButton>
-          {/* <div className="h-2" />
-          <WideClickableContrastButton>
-            Derive a wallet from another wallet
-          </WideClickableContrastButton> */}
+          <div className="flex items-center flex-wrap-reverse gap-2">
+            <WideClickableContrastButton>
+              Generate a new wallet
+            </WideClickableContrastButton>
+            <WideClickableContrastButton>
+              Import an existing wallet
+            </WideClickableContrastButton>
+          </div>
         </Dialog>}
     </HashSubpathProvider>
     <h1 className="text-2xl font-medium">
@@ -160,7 +193,14 @@ export function WalletDialog() {
     </div>
     <div className="h-2" />
     <div className="flex items-center border border-default-contrast rounded-xl po-2 gap-2">
-      {balance == null ? "..." : balance}
+      {account == null ? "..." : account.balance}
+    </div>
+    <div className="h-2" />
+    <div className="flex items-center flex-wrap-reverse gap-2">
+      <WideClickableContrastButton
+        onClick={onSendClick}>
+        {Locale.get(Locale.Send, locale)}
+      </WideClickableContrastButton>
     </div>
     <div className="h-4" />
     <div className="font-medium">
@@ -185,7 +225,7 @@ export function WalletDialog() {
           : "•".repeat(wallet.current.privateKey.length)}
       </div>
     </div>
-    <div className="h-8 grow" />
+    <div className="h-2" />
     <div className="flex items-center flex-wrap-reverse gap-2">
       <WideClickableContrastButton
         onClick={onGenerateClick}>
@@ -196,5 +236,5 @@ export function WalletDialog() {
         {Locale.get(Locale.ImportAnExistingWallet, locale)}
       </WideClickableContrastButton>
     </div>
-  </Dialog>
+  </>
 }

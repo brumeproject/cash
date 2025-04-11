@@ -4,6 +4,7 @@ import { ClickableContrastAnchor } from "@/libs/ui/anchors";
 import { WideClickableOppositeButton } from "@/libs/ui/buttons";
 import { Dialog } from "@/libs/ui/dialog";
 import { Loading } from "@/libs/ui/loading";
+import { API } from "@/mods/api";
 import { Locale } from "@/mods/locale";
 import { useLocaleContext } from "@/mods/locale/mods/context";
 import { AsyncStack, Deferred } from "@hazae41/box";
@@ -122,7 +123,7 @@ export function MiningDialog() {
     const headers = { "Content-Type": "application/json" }
     const body = JSON.stringify({ nonceZeroHex, receiverZeroHex, secretsZeroHex, signatureZeroHex })
 
-    const response = await fetch("https://api.cash.brume.money/api/v0/generate", { method: "POST", headers, body, signal })
+    const response = await fetch(new URL("/api/v0/generate", API), { method: "POST", headers, body, signal })
 
     if (!response.ok)
       throw new UIError("Could not claim")
@@ -488,7 +489,9 @@ export function MiningDialog() {
           </label>
         </Dialog>}
       {hash.url.pathname === "/wallet" &&
-        <WalletDialog />}
+        <Dialog>
+          <WalletDialog />
+        </Dialog>}
     </HashSubpathProvider>
     <div className="h-[300px] p-1 grow flex flex-col border border-default-contrast rounded-xl">
       <div className="po-1 grow overflow-y-auto flex flex-col gap-2">
