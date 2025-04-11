@@ -76,44 +76,49 @@ export default async function generate(
   if (req.method !== "POST")
     return void res.status(405).setHeaders(headers).end()
 
-  const typeZeroHex = "0x67656e6572617465".toLowerCase()
-  const versionZeroHex = "0x6272756d65".toLowerCase()
+  const $version = z.string().asOrThrow(req.body.version)
+  const $type = z.string().asOrThrow(req.body.type)
+  const $nonce = z.string().asOrThrow(req.body.nonce)
+  const $receiver = z.string().asOrThrow(req.body.receiver)
+  const $secrets = z.string().asOrThrow(req.body.secrets)
+  const $signature = z.string().asOrThrow(req.body.signature)
 
-  const nonceZeroHex = z.string().asOrThrow(req.body.nonceZeroHex).toLowerCase()
-  const receiverZeroHex = z.string().asOrThrow(req.body.receiverZeroHex).toLowerCase()
-  const secretsZeroHex = z.string().asOrThrow(req.body.secretsZeroHex).toLowerCase()
-  const signatureZeroHex = z.string().asOrThrow(req.body.signatureZeroHex).toLowerCase()
+  if ($version !== "422827093349")
+    return void res.status(400).setHeaders(headers).end()
+  if ($type !== "generate")
+    return void res.status(400).setHeaders(headers).end()
+  if ($secrets.length > (2 + (64 * 2048)))
+    return void res.status(400).setHeaders(headers).end()
 
-  if (secretsZeroHex.length > (2 + (64 * 2048)))
-    throw new Error("Too many secrets")
-
-  const version = versionZeroHex
-  const nonce = nonceZeroHex
-  const type = typeZeroHex
-  const receiver = receiverZeroHex
-  const secrets = secretsZeroHex
+  const version = $version
+  const type = $type
+  const nonce = $nonce
+  const receiver = $receiver
+  const secrets = $secrets
   const data = { receiver, secrets }
 
-  const signature = signatureZeroHex as `0x${string}`
+  const signature = $signature as `0x${string}`
   const message = JSON.stringify({ version, type, nonce, data })
-  const address = await recoverMessageAddress({ message, signature })
+  const signer = await recoverMessageAddress({ message, signature })
 
   {
     await CashServerWasm.initBundled()
 
-    const versionBase16 = versionZeroHex.slice(2).padStart(64, "0")
+    const versionBigInt = BigInt($version)
+    const versionBase16 = versionBigInt.toString(16).padStart(64, "0")
     using versionMemory = CashServerWasm.base16_decode_mixed(versionBase16)
 
-    const nonceBase16 = nonceZeroHex.slice(2).padStart(64, "0")
+    const nonceBigInt = BigInt($nonce)
+    const nonceBase16 = nonceBigInt.toString(16).slice(2).padStart(64, "0")
     using nonceMemory = CashServerWasm.base16_decode_mixed(nonceBase16)
 
-    const addressZeroHex = address.toLowerCase()
+    const addressZeroHex = signer
     const addressBase16 = addressZeroHex.slice(2).padStart(64, "0")
     using addressMemory = CashServerWasm.base16_decode_mixed(addressBase16)
 
     using mixinWasm = new CashServerWasm.NetworkMixin(versionMemory, addressMemory, nonceMemory)
 
-    const secretsBase16 = secretsZeroHex.slice(2)
+    const secretsBase16 = $secrets.slice(2)
     using secretsMemory = CashServerWasm.base16_decode_mixed(secretsBase16)
 
     using valueMemory = mixinWasm.verify_secrets(secretsMemory)
@@ -121,21 +126,15 @@ export default async function generate(
     const valueZeroHex = `0x${valueRawHex}`
 
     {
-      const countNumber = (secretsZeroHex.length - 2) / 64
+      const countNumber = ($secrets.length - 2) / 64
       const countString = countNumber.toString()
 
       const valueBigInt = BigInt(valueZeroHex)
       const valueString = valueBigInt.toString()
 
-      const nonceBigIng = BigInt(nonceZeroHex)
-      const nonceString = nonceBigIng.toString()
+      const address = signer.toLowerCase()
+      const receiver = $receiver.toLowerCase()
 
-      const version = versionZeroHex
-      const address = addressZeroHex
-      const nonce = nonceString
-      const signature = signatureZeroHex
-      const receiver = receiverZeroHex
-      const secrets = secretsZeroHex
       const value = valueString
       const count = countString
 

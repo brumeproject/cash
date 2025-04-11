@@ -39,16 +39,19 @@ export function MiningDialog() {
   const $settings = useCoords(hash, "/settings")
 
   const generateOrThrow = useCallback(async (size: number, minimum: bigint, signal: AbortSignal) => {
-    const typeZeroHex = "0x67656e6572617465".toLowerCase()
-    const versionZeroHex = "0x6272756d65".toLowerCase()
+    const type = "generate"
+    const version = "422827093349"
 
-    const miner = privateKeyToAccount(generatePrivateKey())
+    const signer = privateKeyToAccount(generatePrivateKey())
     const target = account.current.viemAccount
 
-    const addressZeroHex = miner.address.toLowerCase()
-    const receiverZeroHex = target.address.toLowerCase()
+    const addressZeroHex = signer.address.toLowerCase()
+
+    const versionBigInt = BigInt(version)
+    const versionZeroHex = `0x${versionBigInt.toString(16)}`
 
     const nonceBigInt = 0n
+    const nonceString = nonceBigInt.toString()
     const nonceZeroHex = `0x${nonceBigInt.toString(16).toLowerCase()}`
 
     const minimumBigInt = minimum
@@ -95,33 +98,20 @@ export function MiningDialog() {
 
     signal.throwIfAborted()
 
-    const version = versionZeroHex
-    const nonce = nonceZeroHex
-    const type = typeZeroHex
-    const receiver = receiverZeroHex
+    const nonce = nonceString
+    const receiver = target.address
     const secrets = secretsZeroHex
     const data = { receiver, secrets }
 
     const message = JSON.stringify({ version, type, nonce, data })
-    const signature = await miner.signMessage({ message })
+    const signature = await signer.signMessage({ message })
 
-    const signatureZeroHex = signature.toLowerCase()
-
-    return { nonceZeroHex, receiverZeroHex, secretsZeroHex, signatureZeroHex }
+    return { version, type, nonce, receiver, secrets, signature }
   }, [account, workers, locale])
 
-  interface Claimable {
-    readonly nonceZeroHex: string
-    readonly receiverZeroHex: string
-    readonly secretsZeroHex: string
-    readonly signatureZeroHex: string
-  }
-
-  const claimOrThrow = useCallback(async (data: Claimable, signal: AbortSignal) => {
-    const { nonceZeroHex, receiverZeroHex, secretsZeroHex, signatureZeroHex } = data
-
+  const claimOrThrow = useCallback(async (data: unknown, signal: AbortSignal) => {
     const headers = { "Content-Type": "application/json" }
-    const body = JSON.stringify({ nonceZeroHex, receiverZeroHex, secretsZeroHex, signatureZeroHex })
+    const body = JSON.stringify(data)
 
     const response = await fetch(new URL("/api/v0/generate", API), { method: "POST", headers, body, signal })
 

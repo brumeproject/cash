@@ -92,9 +92,9 @@ export default async function generate(
   const nonce = $nonce
   const receiver = $receiver
   const value = $value
-  const signature = $signature as `0x${string}`
-  const data = { receiver }
+  const data = { receiver, value }
 
+  const signature = $signature as `0x${string}`
   const message = JSON.stringify({ version, type, nonce, data })
   const signer = await recoverMessageAddress({ message, signature })
 

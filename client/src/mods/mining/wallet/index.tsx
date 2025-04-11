@@ -148,7 +148,7 @@ export function WalletDialog() {
     const version = "422827093349"
     const type = "transfer"
     const nonce = String(account.nonce)
-    const data = { receiver }
+    const data = { receiver, value }
 
     const message = JSON.stringify({ version, type, nonce, data })
     const signature = await wallet.current.viemAccount.signMessage({ message })
