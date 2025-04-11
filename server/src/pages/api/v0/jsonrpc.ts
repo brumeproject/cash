@@ -28,7 +28,7 @@ export default async function jsonrpc(
   }
 
   if (method === "eth_blockNumber") {
-    const data = { jsonrpc: "2.0", id, result: "0x0" }
+    const data = { jsonrpc: "2.0", id, result: "0x1" }
     return void res.status(200).setHeaders(headers).json(data);
   }
 
