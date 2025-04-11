@@ -37,12 +37,18 @@ export default async function jsonrpc(
   if (method === "eth_getBalance") {
     const address = z.string().asOrThrow(params[0]).toLowerCase()
 
-    const { data, error } = await supabase.from("accounts").select("balance").eq("address", address).single()
+    const { data, error } = await supabase
+      .from("accounts")
+      .select("balance")
+      .eq("address", address)
+      .limit(1)
 
     if (error)
       throw new Error("Database error", { cause: error.message })
 
-    const result = Fixed.fromString(data.balance!.toString(), 18).toZeroHex()
+    const [account = { address, balance: 0, nonce: 0 }] = data
+
+    const result = Fixed.fromString(account.balance!.toString(), 18).toZeroHex()
 
     const response = { jsonrpc: "2.0", id, result }
     return void res.status(200).setHeaders(headers).json(response);
