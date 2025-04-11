@@ -26,7 +26,7 @@ begin
         select 1 
         from accounts 
         where accounts.address = generate.address
-        and accounts.nonce != generate.nonce
+        and accounts.nonce::numeric != generate.nonce
     ) then
         raise exception 'Invalid nonce';
     end if;
