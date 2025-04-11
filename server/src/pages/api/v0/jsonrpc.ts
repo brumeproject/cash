@@ -49,27 +49,24 @@ export default async function jsonrpc(
   }
 
   if (method === "eth_getBlockByNumber") {
-    const blockNumber = z.string().asOrThrow(params[0])
-    const includeTransactions = z.boolean().asOrThrow(params[1])
-
     const result = {
-      "number": blockNumber,
-      "hash": "0x7f9a8b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0",
-      "parentHash": "0x6e8d7c2b3a4f5e6d7c8b9a0f1e2d3c4b5a6e7f8d9c0b1a2e3f4d5c6b7a8e9f0",
-      "nonce": "0x0000000000000042",
-      "sha3Uncles": "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
+      "number": z.string().asOrThrow(params[0]),
+      "hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "parentHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "nonce": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "sha3Uncles": "0x0000000000000000000000000000000000000000000000000000000000000000",
       "logsBloom": "0x0000000000000000000000000000000000000000000000000000000000000000",
-      "transactionsRoot": "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
-      "stateRoot": "0xd7f8974fb5ac78d9ac099b9ad5018bedc2ce0a72dad1827a1709da30580f0544",
-      "receiptsRoot": "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
-      "miner": "0x1234567890abcdef1234567890abcdef12345678",
-      "difficulty": "0x4ea3f27bc",
-      "totalDifficulty": "0xc8709f4e9b2a",
+      "transactionsRoot": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "stateRoot": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "receiptsRoot": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "miner": "0x0000000000000000000000000000000000000000",
+      "difficulty": "0x0",
+      "totalDifficulty": "0x0",
       "extraData": "0x",
-      "size": "0x027f07",
-      "gasLimit": "0x7a1200",
-      "gasUsed": "0x3d0900",
-      "timestamp": "0x63f9a8bc",
+      "size": "0x0",
+      "gasLimit": "0x0",
+      "gasUsed": "0x0",
+      "timestamp": "0x0",
       "transactions": [],
       "uncles": []
     }
