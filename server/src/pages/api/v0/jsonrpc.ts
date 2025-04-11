@@ -22,5 +22,15 @@ export default async function jsonrpc(
     return void res.status(200).setHeaders(headers).json(data);
   }
 
+  if (method === "net_version") {
+    const data = { jsonrpc: "2.0", id, result: "422827093349" }
+    return void res.status(200).setHeaders(headers).json(data);
+  }
+
+  if (method === "eth_blockNumber") {
+    const data = { jsonrpc: "2.0", id, result: "0x0" }
+    return void res.status(200).setHeaders(headers).json(data);
+  }
+
   res.status(400).setHeaders(headers).end();
 }
