@@ -22,5 +22,5 @@ export default async function jsonrpc(
     return void res.status(200).setHeaders(headers).json(data);
   }
 
-  // res.status(200).setHeaders(headers).json(data);
+  res.status(400).setHeaders(headers).end();
 }
