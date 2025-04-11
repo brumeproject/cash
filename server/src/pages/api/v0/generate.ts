@@ -70,62 +70,74 @@ export default async function generate(
   if (req.method !== "POST")
     return void res.status(405).setHeaders(headers).end()
 
+  const typeZeroHex = "0x67656e6572617465".toLowerCase()
+  const versionZeroHex = "0x6272756d65".toLowerCase()
+
   const nonceZeroHex = z.string().asOrThrow(req.body.nonceZeroHex).toLowerCase()
+  const receiverZeroHex = z.string().asOrThrow(req.body.receiverZeroHex).toLowerCase()
   const secretsZeroHex = z.string().asOrThrow(req.body.secretsZeroHex).toLowerCase()
   const signatureZeroHex = z.string().asOrThrow(req.body.signatureZeroHex).toLowerCase()
 
   if (secretsZeroHex.length > (2 + (64 * 2048)))
     throw new Error("Too many secrets")
 
-  const typeZeroHex = "0x67656e6572617465"
-  const chainZeroHex = "0x6272756d65"
+  const version = versionZeroHex
+  const nonce = nonceZeroHex
+  const type = typeZeroHex
+  const receiver = receiverZeroHex
+  const secrets = secretsZeroHex
+  const data = { receiver, secrets }
+
+  const signature = signatureZeroHex as `0x${string}`
+  const message = JSON.stringify({ version, type, nonce, data })
+  const address = await recoverMessageAddress({ message, signature })
 
   {
-    const message = JSON.stringify({ typeZeroHex, chainZeroHex, nonceZeroHex, secretsZeroHex })
-    const signature = signatureZeroHex as `0x${string}`
+    await CashServerWasm.initBundled()
 
-    const receiverZeroHex = await recoverMessageAddress({ message, signature }).then(x => x.toLowerCase())
+    const versionBase16 = versionZeroHex.slice(2).padStart(64, "0")
+    using versionMemory = CashServerWasm.base16_decode_mixed(versionBase16)
+
+    const nonceBase16 = nonceZeroHex.slice(2).padStart(64, "0")
+    using nonceMemory = CashServerWasm.base16_decode_mixed(nonceBase16)
+
+    const addressZeroHex = address.toLowerCase()
+    const addressBase16 = addressZeroHex.slice(2).padStart(64, "0")
+    using addressMemory = CashServerWasm.base16_decode_mixed(addressBase16)
+
+    using mixinWasm = new CashServerWasm.NetworkMixin(versionMemory, addressMemory, nonceMemory)
+
+    const secretsBase16 = secretsZeroHex.slice(2)
+    using secretsMemory = CashServerWasm.base16_decode_mixed(secretsBase16)
+
+    using valueMemory = mixinWasm.verify_secrets(secretsMemory)
+    const valueRawHex = CashServerWasm.base16_encode_lower(valueMemory)
+    const valueZeroHex = `0x${valueRawHex}`
 
     {
-      await CashServerWasm.initBundled()
+      const countNumber = (secretsZeroHex.length - 2) / 64
+      const countString = countNumber.toString()
 
-      const chainBase16 = chainZeroHex.slice(2).padStart(64, "0")
-      using chainMemory = CashServerWasm.base16_decode_mixed(chainBase16)
-
-      const nonceBase16 = nonceZeroHex.slice(2).padStart(64, "0")
-      using nonceMemory = CashServerWasm.base16_decode_mixed(nonceBase16)
-
-      const receiverBase16 = receiverZeroHex.slice(2).padStart(64, "0")
-      using receiverMemory = CashServerWasm.base16_decode_mixed(receiverBase16)
-
-      using mixinWasm = new CashServerWasm.NetworkMixin(chainMemory, receiverMemory, nonceMemory)
-
-      const secretsBase16 = secretsZeroHex.slice(2)
-      using secretsMemory = CashServerWasm.base16_decode_mixed(secretsBase16)
-
-      using valueMemory = mixinWasm.verify_secrets(secretsMemory)
-      const valueRawHex = CashServerWasm.base16_encode_lower(valueMemory)
-      const valueZeroHex = `0x${valueRawHex}`
       const valueBigInt = BigInt(valueZeroHex)
+      const valueString = valueBigInt.toString()
 
-      {
-        const countNumber = (secretsZeroHex.length - 2) / 64
-        const countString = countNumber.toString()
+      const nonceBigIng = BigInt(nonceZeroHex)
+      const nonceString = nonceBigIng.toString()
 
-        const address = receiverZeroHex
-        const value = valueBigInt.toString()
-        const count = countString
-        const nonce = nonceZeroHex
-        const secrets = secretsZeroHex
-        const signature = signatureZeroHex
+      const address = addressZeroHex
+      const value = valueString
+      const count = countString
+      const nonce = nonceString
+      const secrets = secretsZeroHex
+      const signature = signatureZeroHex
 
-        const { data, error } = await supabase.rpc("generate", { address, value, count, secrets, nonce, chain, signature })
+      const { data, error } = await supabase.rpc("generate", { address, value, count, secrets, nonce, version, signature })
 
-        if (error != null)
-          throw new Error("Database error", { cause: error.message })
+      if (error != null)
+        throw new Error("Database error", { cause: error.message })
 
-        res.status(200).setHeaders(headers).json(data);
-      }
+      res.status(200).setHeaders(headers).json(data);
     }
   }
+
 }

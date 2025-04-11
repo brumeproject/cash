@@ -10,6 +10,7 @@ import { AsyncStack, Deferred } from "@hazae41/box";
 import { HashSubpathProvider, useCoords, useHashSubpath, usePathContext } from "@hazae41/chemin";
 import { NetMixin } from "@hazae41/networker";
 import { ChangeEvent, Fragment, useCallback, useEffect, useRef } from "react";
+import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { useMiningContext } from "../provider";
 import { useWalletContext, WalletDialog } from "../wallet";
 
@@ -58,19 +59,25 @@ export function MiningDialog() {
   }, [getAndSetNonceOrLogAndAlert])
 
   const generateOrThrow = useCallback(async (size: number, minimum: bigint, signal: AbortSignal) => {
-    const contractZeroHex = "0xabc755011B810fDC31F3504f0F855cadFcb2685A".toLowerCase()
-    const receiverZeroHex = account.current.viemAccount.address.toLowerCase()
+    const typeZeroHex = "0x67656e6572617465".toLowerCase()
+    const versionZeroHex = "0x6272756d65".toLowerCase()
 
-    const nonceBigInt = nonce.current
-    const nonceZeroHex = `0x${nonceBigInt.toString(16)}`
+    const miner = privateKeyToAccount(generatePrivateKey())
+    const target = account.current.viemAccount
+
+    const addressZeroHex = miner.address.toLowerCase()
+    const receiverZeroHex = target.address.toLowerCase()
+
+    const nonceBigInt = 0n
+    const nonceZeroHex = `0x${nonceBigInt.toString(16).toLowerCase()}`
 
     const minimumBigInt = minimum
-    const minimumZeroHex = `0x${minimumBigInt.toString(16)}`
+    const minimumZeroHex = `0x${minimumBigInt.toString(16).toLowerCase()}`
 
     const premixins = new Array<Promise<NetMixin>>()
 
     for (let i = 0; i < workers.capacity; i++)
-      premixins.push(workers.getOrThrow(i).getOrThrow().get().createOrThrow({ contractZeroHex, receiverZeroHex, nonceZeroHex }))
+      premixins.push(workers.getOrThrow(i).getOrThrow().get().createOrThrow({ versionZeroHex, addressZeroHex, nonceZeroHex }))
 
     await using mixins = new AsyncStack(await Promise.all(premixins))
 
@@ -84,7 +91,7 @@ export function MiningDialog() {
 
       const generated = await mixin.generateOrThrow(minimumZeroHex)
 
-      secretsZeroHex += generated.secretZeroHex.slice(2)
+      secretsZeroHex += generated.secretZeroHex.toLowerCase().slice(2)
 
       const valueBigInt = BigInt(generated.valueZeroHex)
       const valueString = valueBigInt.toString()
@@ -108,15 +115,19 @@ export function MiningDialog() {
 
     signal.throwIfAborted()
 
-    const typeZeroHex = "0x67656e6572617465"
-    const chainZeroHex = "0x6272756d65"
+    const version = versionZeroHex
+    const nonce = nonceZeroHex
+    const type = typeZeroHex
+    const receiver = receiverZeroHex
+    const secrets = secretsZeroHex
+    const data = { receiver, secrets }
 
-    const message = JSON.stringify({ typeZeroHex, chainZeroHex, nonceZeroHex, secretsZeroHex })
+    const message = JSON.stringify({ version, type, nonce, data })
     const signature = await account.current.viemAccount.signMessage({ message })
 
-    const signatureZeroHex = signature
+    const signatureZeroHex = signature.toLowerCase()
 
-    return { nonceZeroHex, secretsZeroHex, signatureZeroHex }
+    return { nonceZeroHex, receiverZeroHex, secretsZeroHex, signatureZeroHex }
   }, [account, workers, locale])
 
   interface Claimable {

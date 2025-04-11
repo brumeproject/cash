@@ -90,7 +90,7 @@ export function WalletProvider(props: ChildrenProps) {
 export function WalletDialog() {
   const path = usePathContext().getOrThrow()
   const locale = useLocaleContext().getOrThrow()
-  const account = useWalletContext().getOrThrow()
+  const wallet = useWalletContext().getOrThrow()
 
   const hash = useHashSubpath(path)
 
@@ -101,8 +101,8 @@ export function WalletDialog() {
   }), [])
 
   const onGenerateClick = useCallback(() => Errors.runOrLogAndAlert(async () => {
-    await account.setOrThrow(generatePrivateKey())
-  }), [account])
+    await wallet.setOrThrow(generatePrivateKey())
+  }), [wallet])
 
   const onImportClick = useCallback(() => Errors.runOrLogAndAlert(async () => {
     const privateKey = prompt("Enter your private key")
@@ -110,13 +110,13 @@ export function WalletDialog() {
     if (privateKey == null)
       return
 
-    await account.setOrThrow(privateKey as Hex)
-  }), [account])
+    await wallet.setOrThrow(privateKey as Hex)
+  }), [wallet])
 
   const [balance, setBalance] = useState<string>()
 
   const getAndSetBalanceOrLogAndAlert = useCallback(() => Errors.runOrLogAndAlert(async () => {
-    const response = await fetch(`https://api.cash.brume.money/api/v0/balance?address=${account.current.viemAccount.address.toLowerCase()}`)
+    const response = await fetch(`https://api.cash.brume.money/api/v0/balance?address=${wallet.current.viemAccount.address.toLowerCase()}`)
 
     if (!response.ok)
       throw new Error("Failed to fetch balance")
@@ -124,7 +124,7 @@ export function WalletDialog() {
     const { balance } = await response.json()
 
     setBalance(balance)
-  }), [account])
+  }), [wallet])
 
   useEffect(() => {
     getAndSetBalanceOrLogAndAlert()
@@ -169,7 +169,7 @@ export function WalletDialog() {
     <div className="h-2" />
     <div className="flex items-center border border-default-contrast rounded-xl po-2 gap-2">
       <div className="block w-full overflow-hidden whitespace-nowrap text-ellipsis">
-        {account.current.viemAccount.address}
+        {wallet.current.viemAccount.address}
       </div>
     </div>
     <div className="h-4" />
@@ -181,8 +181,8 @@ export function WalletDialog() {
       onClick={onRevealClick}>
       <div className="block w-full overflow-hidden whitespace-nowrap text-ellipsis">
         {reveal === true
-          ? account.current.privateKey
-          : "•".repeat(account.current.privateKey.length)}
+          ? wallet.current.privateKey
+          : "•".repeat(wallet.current.privateKey.length)}
       </div>
     </div>
     <div className="h-8 grow" />
