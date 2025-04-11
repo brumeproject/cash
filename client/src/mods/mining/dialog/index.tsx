@@ -9,7 +9,7 @@ import { useLocaleContext } from "@/mods/locale/mods/context";
 import { AsyncStack, Deferred } from "@hazae41/box";
 import { HashSubpathProvider, useCoords, useHashSubpath, usePathContext } from "@hazae41/chemin";
 import { NetMixin } from "@hazae41/networker";
-import { ChangeEvent, Fragment, useCallback, useEffect, useRef } from "react";
+import { ChangeEvent, Fragment, useCallback } from "react";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { useMiningContext } from "../provider";
 import { useWalletContext, WalletDialog } from "../wallet";
@@ -36,27 +36,6 @@ export function MiningDialog() {
 
   const $wallet = useCoords(hash, "/wallet")
   const $settings = useCoords(hash, "/settings")
-
-  const nonce = useRef<bigint>(0n)
-
-  const getNonceOrThrow = useCallback(async () => {
-    const response = await fetch(`https://api.cash.brume.money/api/v0/account?address=${account.current.viemAccount.address.toLowerCase()}`)
-
-    if (!response.ok)
-      throw new Error("Failed to fetch nonce")
-
-    const data = await response.json()
-
-    return BigInt(data.nonce)
-  }, [account])
-
-  const getAndSetNonceOrLogAndAlert = useCallback(() => Errors.runOrLogAndAlert(async () => {
-    nonce.current = await getNonceOrThrow()
-  }), [account])
-
-  useEffect(() => {
-    getAndSetNonceOrLogAndAlert()
-  }, [getAndSetNonceOrLogAndAlert])
 
   const generateOrThrow = useCallback(async (size: number, minimum: bigint, signal: AbortSignal) => {
     const typeZeroHex = "0x67656e6572617465".toLowerCase()
@@ -123,7 +102,7 @@ export function MiningDialog() {
     const data = { receiver, secrets }
 
     const message = JSON.stringify({ version, type, nonce, data })
-    const signature = await account.current.viemAccount.signMessage({ message })
+    const signature = await miner.signMessage({ message })
 
     const signatureZeroHex = signature.toLowerCase()
 
@@ -132,15 +111,16 @@ export function MiningDialog() {
 
   interface Claimable {
     readonly nonceZeroHex: string
+    readonly receiverZeroHex: string
     readonly secretsZeroHex: string
     readonly signatureZeroHex: string
   }
 
   const claimOrThrow = useCallback(async (data: Claimable, signal: AbortSignal) => {
-    const { nonceZeroHex, secretsZeroHex, signatureZeroHex } = data
+    const { nonceZeroHex, receiverZeroHex, secretsZeroHex, signatureZeroHex } = data
 
     const headers = { "Content-Type": "application/json" }
-    const body = JSON.stringify({ nonceZeroHex, secretsZeroHex, signatureZeroHex })
+    const body = JSON.stringify({ nonceZeroHex, receiverZeroHex, secretsZeroHex, signatureZeroHex })
 
     const response = await fetch("https://api.cash.brume.money/api/v0/generate", { method: "POST", headers, body, signal })
 
@@ -164,7 +144,7 @@ export function MiningDialog() {
   }, [generateOrThrow, claimOrThrow])
 
   const generateAndAsyncClaimOrLogAndAlertInLoopOrThrow = useCallback(async (size: number, minimum: bigint, signal: AbortSignal) => {
-    while (!signal.aborted) claimOrThrow(await generateOrThrow(size, minimum, signal), signal).catch(Errors.logAndAlert)
+    while (!signal.aborted) claimOrThrow(await generateOrThrow(size, minimum, signal), signal).catch(Errors.log)
   }, [generateOrThrow, claimOrThrow])
 
   const {
@@ -212,8 +192,6 @@ export function MiningDialog() {
       setAborter(aborter)
 
       using _ = new Deferred(() => setAborter(undefined))
-
-      const nonce = await getNonceOrThrow()
 
       const minimumString = minimum
       const minimumBigInt = BigInt(minimumString)
