@@ -130,14 +130,16 @@ export default async function generate(
       const nonceBigIng = BigInt(nonceZeroHex)
       const nonceString = nonceBigIng.toString()
 
+      const version = versionZeroHex
       const address = addressZeroHex
+      const nonce = nonceString
+      const signature = signatureZeroHex
+      const receiver = receiverZeroHex
+      const secrets = secretsZeroHex
       const value = valueString
       const count = countString
-      const nonce = nonceString
-      const secrets = secretsZeroHex
-      const signature = signatureZeroHex
 
-      const { data, error } = await supabase.rpc("generate", { address, value, count, secrets, nonce, version, signature })
+      const { data, error } = await supabase.rpc("generate", { version, address, nonce, signature, receiver, secrets, value, count })
 
       if (error != null)
         throw new Error("Database error", { cause: error.message })
