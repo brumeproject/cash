@@ -1,4 +1,6 @@
 // Next.js API route support: https://nextjs.org/docs/api-routes/introduction
+import { supabase } from "@/mods/supabase/mods/client";
+import { Fixed } from "@hazae41/cubane";
 import { z } from "@hazae41/gardien";
 import type { NextApiRequest, NextApiResponse } from "next";
 
@@ -33,7 +35,16 @@ export default async function jsonrpc(
   }
 
   if (method === "eth_getBalance") {
-    const response = { jsonrpc: "2.0", id, result: "0x0" }
+    const address = z.string().asOrThrow(params[0]).toLowerCase()
+
+    const { data, error } = await supabase.from("accounts").select("balance").eq("address", address).single()
+
+    if (error)
+      throw new Error("Database error", { cause: error.message })
+
+    const result = Fixed.fromString(data.balance!.toString(), 18).toZeroHex()
+
+    const response = { jsonrpc: "2.0", id, result }
     return void res.status(200).setHeaders(headers).json(response);
   }
 
