@@ -7,11 +7,14 @@ import { recoverMessageAddress } from "viem";
 
 /* 
 create or replace function generate(
+    version text,
     address text,
+    nonce numeric,
+    signature text,
+    receiver text,
+    secrets text,
     value numeric,
-    count numeric,
-    nonce text,
-    secrets text
+    count numeric
 ) returns numeric as $$
 declare
     total_value numeric;
@@ -21,12 +24,11 @@ declare
 begin
     if exists (
         select 1 
-        from events 
-        where events.type = 'generate'
-        and events.data ->> address = generate.address 
-        and events.data ->> nonce = generate.nonce
+        from accounts 
+        where accounts.address = generate.address
+        and accounts.nonce != generate.nonce
     ) then
-        raise exception 'Nonce replayed';
+        raise exception 'Invalid nonce';
     end if;
 
     total_value := coalesce((select meta.value::numeric from meta where key = 'total_value'), 0) + generate.value;
@@ -45,14 +47,18 @@ begin
     average := total_value / total_count;
     derived := generate.value / average;
 
-    insert into accounts (address, balance)
-    values (generate.address, to_jsonb(derived))
+    insert into accounts (address, balance, nonce)
+    values (generate.receiver, to_jsonb(derived), to_jsonb(0))
     on conflict on constraint accounts_pkey
-    do update set
-        balance = to_jsonb(accounts.balance::numeric + derived);
+    do update set balance = to_jsonb(accounts.balance::numeric + derived);
+
+    insert into accounts (address, balance, nonce)
+    values (generate.address, to_jsonb(0), to_jsonb(1))
+    on conflict on constraint accounts_pkey
+    do update set nonce = to_jsonb(accounts.nonce::numeric + 1);
 
     insert into events (type, data)
-    values ('generate', jsonb_build_object('address', generate.address, 'value', generate.value, 'count', generate.count, 'nonce', generate.nonce, 'secrets', generate.secrets));
+    values ('generate', jsonb_build_object('version', generate.version, 'address', generate.address, 'nonce', generate.nonce, 'signature', generate.signature, 'receiver', generate.receiver, 'secrets', generate.secrets, 'value', generate.value, 'count', generate.count, 'average', average, 'derived', derived));
     
     return derived;
 end;
