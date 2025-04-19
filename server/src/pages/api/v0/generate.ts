@@ -13,14 +13,14 @@ create or replace function generate(
     signature text,
     receiver text,
     secrets text,
-    value numeric,
-    count numeric
+    power numeric
 ) returns numeric as $$
 declare
-    total_value numeric;
-    total_count numeric;
-    average numeric;
-    derived numeric;
+    delta numeric;
+    fresh numeric;
+    stale numeric;
+    mined numeric;
+    previous record;
 begin
     if exists (
         select 1 
@@ -31,26 +31,18 @@ begin
         raise exception 'Invalid nonce';
     end if;
 
-    total_value := coalesce((select meta.value::numeric from meta where key = 'total_value'), 0) + generate.value;
-    total_count := coalesce((select meta.value::numeric from meta where key = 'total_count'), 0) + generate.count;
+    select * into previous from events where type = 'generate' order by id desc limit 1;
 
-    insert into meta (key, value)
-    values ('total_value', to_jsonb(total_value))
-    on conflict on constraint meta_pkey
-    do update set value = to_jsonb(total_value);
+    delta := extract(epoch from (select current_timestamp)) - extract(epoch from (coalesce(previous.time, (select current_timestamp))));
 
-    insert into meta (key, value)
-    values ('total_count', to_jsonb(total_count))
-    on conflict on constraint meta_pkey
-    do update set value = to_jsonb(total_count);
+    stale := coalesce((previous.data -> 'stale')::numeric, 0) + (delta / 1000000);
 
-    average := total_value / total_count;
-    derived := generate.value / average;
+    mined := (stale * power) / 256;
 
     insert into accounts (address, balance, nonce)
-    values (generate.receiver, to_jsonb(derived), to_jsonb(0))
+    values (generate.receiver, to_jsonb(mined), to_jsonb(0))
     on conflict on constraint accounts_pkey
-    do update set balance = to_jsonb(accounts.balance::numeric + derived);
+    do update set balance = to_jsonb(accounts.balance::numeric + mined);
 
     insert into accounts (address, balance, nonce)
     values (generate.address, to_jsonb(0), to_jsonb(1))
@@ -58,9 +50,9 @@ begin
     do update set nonce = to_jsonb(accounts.nonce::numeric + 1);
 
     insert into events (type, data)
-    values ('generate', jsonb_build_object('version', generate.version, 'address', generate.address, 'nonce', generate.nonce, 'signature', generate.signature, 'receiver', generate.receiver, 'secrets', generate.secrets, 'value', generate.value, 'count', generate.count, 'average', average, 'derived', derived));
+    values ('generate', jsonb_build_object('version', generate.version, 'address', generate.address, 'nonce', generate.nonce, 'signature', generate.signature, 'receiver', generate.receiver, 'secrets', generate.secrets, 'power', generate.power, 'mined', mined, 'stale', stale - mined));
     
-    return derived;
+    return mined;
 end;
 $$ language plpgsql;
 */
