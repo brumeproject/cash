@@ -102,15 +102,17 @@ export type Database = {
           signature: string
           receiver: string
           secrets: string
-          value: string
-          count: string
+          power: string
         }
         | {
+          version: string
           address: string
+          nonce: string
+          signature: string
+          receiver: string
+          secrets: string
           value: string
           count: string
-          nonce: string
-          secrets: string
         }
         Returns: string
       }
@@ -123,7 +125,7 @@ export type Database = {
           receiver: string
           value: string
         }
-        Returns: string
+        Returns: undefined
       }
     }
     Enums: {
