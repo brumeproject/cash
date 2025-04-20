@@ -73,21 +73,6 @@ export type Database = {
         }
         Relationships: []
       }
-      meta: {
-        Row: {
-          key: string
-          value: Json | null
-        }
-        Insert: {
-          key: string
-          value?: Json | null
-        }
-        Update: {
-          key?: string
-          value?: Json | null
-        }
-        Relationships: []
-      }
     }
     Views: {
       [_ in never]: never
@@ -102,7 +87,7 @@ export type Database = {
           signature: string
           receiver: string
           secrets: string
-          power: string
+          sparks: string
         }
         | {
           version: string

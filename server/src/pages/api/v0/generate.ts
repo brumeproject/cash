@@ -116,17 +116,15 @@ export default async function generate(
     using valueMemory = mixinWasm.verify_secrets(secretsMemory)
     const valueRawHex = CashServerWasm.base16_encode_lower(valueMemory)
     const valueZeroHex = `0x${valueRawHex}`
-    const valueNumber = Number(valueZeroHex)
-
-    const powerNumber = Math.log2(valueNumber)
-    const powerString = powerNumber.toString()
+    const valueBigInt = BigInt(valueZeroHex)
+    const valueString = valueBigInt.toString()
 
     {
       const address = signer.toLowerCase()
       const receiver = $receiver.toLowerCase()
-      const power = powerString
+      const sparks = valueString
 
-      const { data, error } = await supabase.rpc("generate", { version, address, nonce, signature, receiver, secrets, power })
+      const { data, error } = await supabase.rpc("generate", { version, address, nonce, signature, receiver, secrets, sparks })
 
       if (error != null)
         throw new Error("Database error", { cause: error.message })
