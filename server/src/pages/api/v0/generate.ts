@@ -13,14 +13,18 @@ create or replace function generate(
     signature text,
     receiver text,
     secrets text,
-    power numeric
+    sparks numeric
 ) returns numeric as $$
 declare
-    delta numeric;
-    fresh numeric;
-    stale numeric;
-    mined numeric;
     previous record;
+    delta numeric;
+    psparks numeric;
+    ptokens numeric;
+    bsparks numeric;
+    ssparks numeric;
+    btokens numeric;
+    stokens numeric;
+    tokens numeric;
 begin
     if exists (
         select 1 
@@ -35,14 +39,27 @@ begin
 
     delta := extract(epoch from (select current_timestamp)) - extract(epoch from (coalesce(previous.time, (select current_timestamp))));
 
-    stale := coalesce((previous.data -> 'stale')::numeric, 0) + (delta / 1000000);
+    psparks := coalesce((previous.data -> 'psparks')::numeric, 1);
+    ptokens := coalesce((previous.data -> 'ptokens')::numeric, 1);
 
-    mined := (stale * power) / 256;
+    stokens := delta / 1000000;
+    --bsparks := (stokens * psparks) / (ptokens + stokens);
+
+    --psparks = psparks - bsparks;
+    ptokens = ptokens + stokens;
+
+    ssparks := least(sparks, psparks);
+    btokens := (ssparks * ptokens) / (psparks + ssparks);
+
+    psparks = psparks + ssparks;
+    ptokens = ptokens - btokens;
+
+    tokens := btokens;
 
     insert into accounts (address, balance, nonce)
-    values (generate.receiver, to_jsonb(mined), to_jsonb(0))
+    values (generate.receiver, to_jsonb(tokens), to_jsonb(0))
     on conflict on constraint accounts_pkey
-    do update set balance = to_jsonb(accounts.balance::numeric + mined);
+    do update set balance = to_jsonb(accounts.balance::numeric + tokens);
 
     insert into accounts (address, balance, nonce)
     values (generate.address, to_jsonb(0), to_jsonb(1))
@@ -50,9 +67,9 @@ begin
     do update set nonce = to_jsonb(accounts.nonce::numeric + 1);
 
     insert into events (type, data)
-    values ('generate', jsonb_build_object('version', generate.version, 'address', generate.address, 'nonce', generate.nonce, 'signature', generate.signature, 'receiver', generate.receiver, 'secrets', generate.secrets, 'power', generate.power, 'mined', mined, 'stale', stale - mined));
+    values ('generate', jsonb_build_object('version', generate.version, 'address', generate.address, 'nonce', generate.nonce, 'signature', generate.signature, 'receiver', generate.receiver, 'secrets', generate.secrets, 'sparks', generate.sparks, 'tokens', tokens, 'psparks', psparks, 'ptokens', ptokens));
     
-    return mined;
+    return tokens;
 end;
 $$ language plpgsql;
 */
