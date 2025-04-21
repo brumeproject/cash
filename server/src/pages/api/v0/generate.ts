@@ -43,9 +43,6 @@ begin
     ptokens := coalesce((previous.data -> 'ptokens')::numeric, 1);
 
     stokens := delta / 1000000;
-    --bsparks := (stokens * psparks) / (ptokens + stokens);
-
-    --psparks = psparks - bsparks;
     ptokens = ptokens + stokens;
 
     ssparks := least(sparks, psparks);
