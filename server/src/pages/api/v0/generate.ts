@@ -3,7 +3,8 @@ import { supabase } from "@/mods/supabase/mods/client";
 import { CashServerWasm } from "@brumewallet/cash.server.wasm";
 import { z } from "@hazae41/gardien";
 import type { NextApiRequest, NextApiResponse } from "next";
-import { recoverMessageAddress } from "viem";
+
+await CashServerWasm.initBundled()
 
 /* 
 create or replace function generate(
@@ -71,6 +72,41 @@ end;
 $$ language plpgsql;
 */
 
+function recoverOrThrow(message: string, signature: string) {
+  const messageBytes = new TextEncoder().encode(message)
+  const prefixBytes = new TextEncoder().encode("\x19Ethereum Signed Message:\n" + messageBytes.length)
+
+  const concatBytes = new Uint8Array(prefixBytes.length + messageBytes.length)
+  concatBytes.set(prefixBytes, 0)
+  concatBytes.set(messageBytes, prefixBytes.length)
+
+  using concatMemory = new CashServerWasm.Memory(concatBytes)
+  using concatHashMemory = CashServerWasm.keccak256(concatMemory)
+
+  const signatureBase16 = signature.slice(2)
+  using signatureMemory = CashServerWasm.base16_decode_mixed(signatureBase16)
+  using signatureObject = CashServerWasm.Secp256k1SignatureAndRecovery.from_bytes(signatureMemory)
+
+  using publicKeyObject = CashServerWasm.Secp256k1VerifyingKey.recover_from_prehash(concatHashMemory, signatureObject)
+  using publicKeyMemory = publicKeyObject.to_sec1_uncompressed_bytes()
+
+  using publicKeyHashMemory = CashServerWasm.keccak256(publicKeyMemory)
+  const publicKeyHashBase16 = CashServerWasm.base16_encode_lower(publicKeyHashMemory)
+
+  return `0x${publicKeyHashBase16.slice(24)}`
+}
+
+function hashOrThrow(text: string) {
+  const textString = text
+  const textBytes = new TextEncoder().encode(textString)
+  using textMemory = new CashServerWasm.Memory(textBytes)
+
+  using hashMemory = CashServerWasm.keccak256(textMemory)
+  const hashZeroHex = `0x${CashServerWasm.base16_encode_lower(hashMemory)}`
+
+  return hashZeroHex
+}
+
 export default async function generate(
   req: NextApiRequest,
   res: NextApiResponse,
@@ -103,13 +139,13 @@ export default async function generate(
   const secrets = $secrets
   const data = { receiver, secrets }
 
-  const signature = $signature as `0x${string}`
   const message = JSON.stringify({ version, type, nonce, data })
-  const signer = await recoverMessageAddress({ message, signature })
+  const signature = $signature
+
+  const address = recoverOrThrow(message, signature)
+  const hash = hashOrThrow(JSON.stringify({ message, signature }))
 
   {
-    await CashServerWasm.initBundled()
-
     const versionBigInt = BigInt($version)
     const versionBase16 = versionBigInt.toString(16).padStart(64, "0")
     using versionMemory = CashServerWasm.base16_decode_mixed(versionBase16)
@@ -118,7 +154,7 @@ export default async function generate(
     const nonceBase16 = nonceBigInt.toString(16).slice(2).padStart(64, "0")
     using nonceMemory = CashServerWasm.base16_decode_mixed(nonceBase16)
 
-    const addressZeroHex = signer
+    const addressZeroHex = address
     const addressBase16 = addressZeroHex.slice(2).padStart(64, "0")
     using addressMemory = CashServerWasm.base16_decode_mixed(addressBase16)
 
@@ -128,17 +164,15 @@ export default async function generate(
     using secretsMemory = CashServerWasm.base16_decode_mixed(secretsBase16)
 
     using valueMemory = mixinWasm.verify_secrets(secretsMemory)
-    const valueRawHex = CashServerWasm.base16_encode_lower(valueMemory)
-    const valueZeroHex = `0x${valueRawHex}`
+    const valueZeroHex = `0x${CashServerWasm.base16_encode_lower(valueMemory)}`
     const valueBigInt = BigInt(valueZeroHex)
     const valueString = valueBigInt.toString()
 
     {
-      const address = signer.toLowerCase()
       const receiver = $receiver.toLowerCase()
       const sparks = valueString
 
-      const { data, error } = await supabase.rpc("generate", { version, address, nonce, signature, receiver, secrets, sparks })
+      const { data, error } = await supabase.rpc("generate", { version, address, nonce, signature, hash, receiver, secrets, sparks })
 
       if (error != null)
         throw new Error("Database error", { cause: error.message })

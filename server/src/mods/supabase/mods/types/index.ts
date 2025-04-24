@@ -85,6 +85,16 @@ export type Database = {
           address: string
           nonce: string
           signature: string
+          hash: string
+          receiver: string
+          secrets: string
+          sparks: string
+        }
+        | {
+          version: string
+          address: string
+          nonce: string
+          signature: string
           receiver: string
           secrets: string
           sparks: string
