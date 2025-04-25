@@ -1,6 +1,6 @@
 // Next.js API route support: https://nextjs.org/docs/api-routes/introduction
 import { supabase } from "@/mods/supabase/mods/client";
-import { Fixed } from "@hazae41/cubane";
+import { Fixed } from "@hazae41/fixed";
 import { z } from "@hazae41/gardien";
 import type { NextApiRequest, NextApiResponse } from "next";
 
@@ -48,7 +48,10 @@ export default async function jsonrpc(
 
     const [account = { address, balance: 0, nonce: 0 }] = data
 
-    const result = Fixed.fromString(account.balance!.toString(), 18).toZeroHex()
+    const balanceString = account.balance!.toString()
+    const balanceFixed = Fixed.fromDecimalString(balanceString)
+
+    const result = balanceFixed.move(18).toZeroHexString()
 
     const response = { jsonrpc: "2.0", id, result }
     return void res.status(200).setHeaders(headers).json(response);
