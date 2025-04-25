@@ -11,7 +11,6 @@
   "dependencies": {
     "@hazae41/box": "^2.1.0",
     "@hazae41/chemin": "^2.0.10",
-    "@hazae41/cubane": "^0.3.1",
     "@hazae41/immutable": "^1.0.13",
     "@hazae41/labase": "^1.0.8",
     "@hazae41/mutex": "^2.1.0",
