@@ -114,7 +114,7 @@ export function WalletDialog() {
     await wallet.setOrThrow(privateKey as Hex)
   }), [wallet])
 
-  const [account, setAccount] = useState<{ balance: number, nonce: number }>()
+  const [account, setAccount] = useState<{ balance: string, nonce: string }>()
 
   const getAndSetAccountOrLogAndAlert = useCallback(() => Errors.runOrLogAndAlert(async () => {
     const response = await fetch(new URL(`/api/v0/account?address=${wallet.current.viemAccount.address.toLowerCase()}`, API))
@@ -147,7 +147,7 @@ export function WalletDialog() {
 
     const version = "422827093349"
     const type = "transfer"
-    const nonce = String(account.nonce)
+    const nonce = account.nonce
     const data = { receiver, value }
 
     const message = JSON.stringify({ version, type, nonce, data })
@@ -193,7 +193,9 @@ export function WalletDialog() {
     </div>
     <div className="h-2" />
     <div className="flex items-center border border-default-contrast rounded-xl po-2 gap-2">
-      {account == null ? "..." : account.balance}
+      <div className="block w-full overflow-hidden whitespace-nowrap text-ellipsis">
+        {account == null ? "..." : account.balance}
+      </div>
     </div>
     <div className="h-2" />
     <div className="flex items-center flex-wrap-reverse gap-2">
