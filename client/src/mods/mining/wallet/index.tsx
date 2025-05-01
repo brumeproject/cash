@@ -6,7 +6,6 @@ import { Dialog } from "@/libs/ui/dialog";
 import { API } from "@/mods/api";
 import { useDatabaseContext } from "@/mods/database";
 import { HashSubpathProvider, useHashSubpath, usePathContext } from "@hazae41/chemin";
-import { Address } from "@hazae41/cubane";
 import { Fixed } from "@hazae41/fixed";
 import { Option } from "@hazae41/option";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
@@ -147,7 +146,7 @@ export function WalletDialog() {
     if ($value == null)
       return
 
-    const receiver = Address.fromOrThrow($receiver)
+    const receiver = $receiver
     const value = Fixed.fromDecimalString($value).as(18).toBigInt().toString()
 
     const version = "422827093349"
