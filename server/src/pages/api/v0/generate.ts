@@ -96,17 +96,6 @@ function recoverOrThrow(message: string, signature: string) {
   return `0x${publicKeyHashBase16.slice(24)}`
 }
 
-function hashOrThrow(text: string) {
-  const textString = text
-  const textBytes = new TextEncoder().encode(textString)
-  using textMemory = new CashServerWasm.Memory(textBytes)
-
-  using hashMemory = CashServerWasm.keccak256(textMemory)
-  const hashZeroHex = `0x${CashServerWasm.base16_encode_lower(hashMemory)}`
-
-  return hashZeroHex
-}
-
 export default async function generate(
   req: NextApiRequest,
   res: NextApiResponse,
@@ -143,7 +132,6 @@ export default async function generate(
   const signature = $signature
 
   const address = recoverOrThrow(message, signature)
-  const hash = hashOrThrow(JSON.stringify({ message, signature }))
 
   {
     const versionBigInt = BigInt($version)
@@ -172,7 +160,7 @@ export default async function generate(
       const receiver = $receiver.toLowerCase()
       const sparks = valueString
 
-      const { data, error } = await supabase.rpc("generate", { version, address, nonce, signature, hash, receiver, secrets, sparks })
+      const { data, error } = await supabase.rpc("generate", { version, address, nonce, signature, receiver, secrets, sparks })
 
       if (error != null)
         throw new Error("Database error", { cause: error.message })
