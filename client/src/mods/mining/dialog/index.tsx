@@ -9,6 +9,7 @@ import { Locale } from "@/mods/locale";
 import { useLocaleContext } from "@/mods/locale/mods/context";
 import { AsyncStack, Deferred } from "@hazae41/box";
 import { HashSubpathProvider, useCoords, useHashSubpath, usePathContext } from "@hazae41/chemin";
+import { Fixed } from "@hazae41/fixed";
 import { NetMixin } from "@hazae41/networker";
 import { ChangeEvent, Fragment, useCallback } from "react";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
@@ -118,7 +119,7 @@ export function MiningDialog() {
     if (!response.ok)
       throw new UIError("Could not claim")
 
-    const result = await response.json()
+    const result = Fixed.fromBigInt(BigInt(await response.json())).as(18).toDecimalString()
 
     setLogs(logs => [
       <Fragment key={crypto.randomUUID()}>

@@ -31,7 +31,7 @@ export default async function account(
   if (error != null)
     throw new Error("Database error", { cause: error.message })
 
-  const [account = { address, balance: 0, nonce: 0 }] = data
+  const [account = { address, balance: "0", nonce: "0" }] = data
 
   res.status(200).setHeaders(headers).json(account);
 }

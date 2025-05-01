@@ -1,6 +1,6 @@
 export type Json =
   | string
-  | string
+  | number
   | boolean
   | null
   | { [key: string]: Json | undefined }
@@ -37,6 +37,24 @@ export type Database = {
       accounts: {
         Row: {
           address: string
+          balance: string
+          nonce: string
+        }
+        Insert: {
+          address: string
+          balance?: string
+          nonce?: string
+        }
+        Update: {
+          address?: string
+          balance?: string
+          nonce?: string
+        }
+        Relationships: []
+      }
+      accounts_0: {
+        Row: {
+          address: string
           balance: Json
           nonce: Json
         }
@@ -55,21 +73,21 @@ export type Database = {
       events: {
         Row: {
           data: Json | null
-          id: string
+          hash: string | null
+          id: number
           time: string
-          type: string
         }
         Insert: {
           data?: Json | null
-          id?: string
+          hash?: string | null
+          id?: number
           time?: string
-          type: string
         }
         Update: {
           data?: Json | null
-          id?: string
+          hash?: string | null
+          id?: number
           time?: string
-          type?: string
         }
         Relationships: []
       }
@@ -79,8 +97,7 @@ export type Database = {
     }
     Functions: {
       generate: {
-        Args:
-        | {
+        Args: {
           version: string
           address: string
           nonce: string
@@ -89,17 +106,7 @@ export type Database = {
           secrets: string
           sparks: string
         }
-        | {
-          version: string
-          address: string
-          nonce: string
-          signature: string
-          receiver: string
-          secrets: string
-          value: string
-          count: string
-        }
-        Returns: string
+        Returns: number
       }
       transfer: {
         Args: {

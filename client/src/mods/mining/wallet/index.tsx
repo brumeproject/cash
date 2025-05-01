@@ -6,6 +6,7 @@ import { Dialog } from "@/libs/ui/dialog";
 import { API } from "@/mods/api";
 import { useDatabaseContext } from "@/mods/database";
 import { HashSubpathProvider, useHashSubpath, usePathContext } from "@hazae41/chemin";
+import { Fixed } from "@hazae41/fixed";
 import { Option } from "@hazae41/option";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { Hex, isAddress, PrivateKeyAccount } from "viem";
@@ -166,6 +167,12 @@ export function WalletDialog() {
     getAndSetAccountOrLogAndAlert()
   }), [wallet, account])
 
+  const balance = useMemo(() => {
+    if (account == null)
+      return
+    return Fixed.fromBigInt(BigInt(account.balance)).as(18).toDecimalString()
+  }, [account])
+
   return <>
     <HashSubpathProvider>
       {hash.url.pathname === "/connect" &&
@@ -194,7 +201,7 @@ export function WalletDialog() {
     <div className="h-2" />
     <div className="flex items-center border border-default-contrast rounded-xl po-2 gap-2">
       <div className="block w-full overflow-hidden whitespace-nowrap text-ellipsis">
-        {account == null ? "..." : account.balance}
+        {balance == null ? "..." : balance}
       </div>
     </div>
     <div className="h-2" />
