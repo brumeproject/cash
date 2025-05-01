@@ -1,5 +1,6 @@
 // Next.js API route support: https://nextjs.org/docs/api-routes/introduction
 import { supabase } from "@/mods/supabase/mods/client";
+import { Address } from "@hazae41/cubane";
 import { z } from "@hazae41/gardien";
 import type { NextApiRequest, NextApiResponse } from "next";
 import { recoverMessageAddress } from "viem";
@@ -89,9 +90,9 @@ export default async function generate(
 
   const version = $version
   const type = $type
-  const nonce = $nonce
-  const receiver = $receiver
-  const value = $value
+  const nonce = BigInt($nonce).toString()
+  const receiver = Address.fromOrThrow($receiver).toLowerCase()
+  const value = BigInt($value).toString()
   const data = { receiver, value }
 
   const signature = $signature as `0x${string}`

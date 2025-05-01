@@ -1,6 +1,7 @@
 // Next.js API route support: https://nextjs.org/docs/api-routes/introduction
 import { supabase } from "@/mods/supabase/mods/client";
 import { CashServerWasm } from "@brumewallet/cash.server.wasm";
+import { Address } from "@hazae41/cubane";
 import { z } from "@hazae41/gardien";
 import type { NextApiRequest, NextApiResponse } from "next";
 import { recoverMessageAddress } from "viem";
@@ -98,8 +99,8 @@ export default async function generate(
 
   const version = $version
   const type = $type
-  const nonce = $nonce
-  const receiver = $receiver
+  const nonce = BigInt($nonce).toString()
+  const receiver = Address.fromOrThrow($receiver).toLowerCase()
   const secrets = $secrets
   const data = { receiver, secrets }
 

@@ -6,6 +6,7 @@ import { Dialog } from "@/libs/ui/dialog";
 import { API } from "@/mods/api";
 import { useDatabaseContext } from "@/mods/database";
 import { HashSubpathProvider, useHashSubpath, usePathContext } from "@hazae41/chemin";
+import { Address } from "@hazae41/cubane";
 import { Fixed } from "@hazae41/fixed";
 import { Option } from "@hazae41/option";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
@@ -134,17 +135,20 @@ export function WalletDialog() {
     if (account == null)
       return
 
-    const receiver = prompt("Enter the address to send to")
+    const $receiver = prompt("Enter the address to send to")
 
-    if (receiver == null)
+    if ($receiver == null)
       return
-    if (!isAddress(receiver))
+    if (!isAddress($receiver))
       throw new UIError("Invalid address")
 
-    const value = prompt("Enter the amount to send")
+    const $value = prompt("Enter the amount to send")
 
-    if (value == null)
+    if ($value == null)
       return
+
+    const receiver = Address.fromOrThrow($receiver).toLowerCase()
+    const value = Fixed.fromDecimalString($value).as(18).toBigInt().toString()
 
     const version = "422827093349"
     const type = "transfer"
