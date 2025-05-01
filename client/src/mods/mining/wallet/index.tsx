@@ -147,7 +147,7 @@ export function WalletDialog() {
     if ($value == null)
       return
 
-    const receiver = Address.fromOrThrow($receiver).toLowerCase()
+    const receiver = Address.fromOrThrow($receiver)
     const value = Fixed.fromDecimalString($value).as(18).toBigInt().toString()
 
     const version = "422827093349"

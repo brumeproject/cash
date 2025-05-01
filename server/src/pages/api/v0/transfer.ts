@@ -91,7 +91,7 @@ export default async function generate(
   const version = $version
   const type = $type
   const nonce = BigInt($nonce).toString()
-  const receiver = Address.fromOrThrow($receiver).toLowerCase()
+  const receiver = Address.fromOrThrow($receiver)
   const value = BigInt($value).toString()
   const data = { receiver, value }
 
