@@ -11,7 +11,8 @@ import { AsyncStack, Deferred } from "@hazae41/box";
 import { HashSubpathProvider, useCoords, useHashSubpath, usePathContext } from "@hazae41/chemin";
 import { Fixed } from "@hazae41/fixed";
 import { NetMixin } from "@hazae41/networker";
-import { ChangeEvent, Fragment, useCallback } from "react";
+import { Result } from "@hazae41/result";
+import { ChangeEvent, Fragment, useCallback, useMemo } from "react";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { useMiningContext } from "../provider";
 import { useWalletContext, WalletDialog } from "../wallet";
@@ -139,37 +140,51 @@ export function MiningDialog() {
     while (!signal.aborted) claimOrThrow(await generateOrThrow(size, minimum, signal), signal).catch(Errors.log)
   }, [generateOrThrow, claimOrThrow])
 
-  const {
-    mode = "stop",
-    minimum = "1000000",
-    size = "128"
-  } = settings ?? {}
+  const rawMode = useMemo(() => {
+    return settings?.mode
+  }, [settings])
 
   const onModeChange = useCallback((event: ChangeEvent<HTMLInputElement>) => Errors.runOrLogAndAlert(async () => {
-    if (event.currentTarget.checked)
+    if (event.target.checked)
       setSettings(x => ({ ...x, mode: "loop" }))
     else
       setSettings(x => ({ ...x, mode: "stop" }))
   }), [])
 
-  const onMinimumChange = useCallback((event: ChangeEvent<HTMLInputElement>) => Errors.runOrLogAndAlert(async () => {
-    const minimumString = event.currentTarget.value
-    const minimumBigInt = BigInt(minimumString)
+  const rawMininmum = useMemo(() => {
+    return settings?.minimum ?? ""
+  }, [settings])
 
-    if (minimumBigInt < 1n)
+  const triedMinimum = useMemo(() => Result.runAndDoubleWrapSync(() => {
+    const string = rawMininmum || "1000000"
+    const bigint = BigInt(string)
+
+    if (bigint < 1n)
       throw new UIError("Minimum must be greater than or equals to 1")
 
-    setSettings(x => ({ ...x, minimum: minimumString }))
+    return bigint
+  }), [rawMininmum])
+
+  const onMinimumChange = useCallback((event: ChangeEvent<HTMLInputElement>) => Errors.runOrLogAndAlert(async () => {
+    setSettings(x => ({ ...x, minimum: event.target.value }))
   }), [])
 
-  const onSizeChange = useCallback((event: ChangeEvent<HTMLInputElement>) => Errors.runOrLogAndAlert(async () => {
-    const sizeString = event.currentTarget.value
-    const sizeNumber = Number(sizeString)
+  const rawSize = useMemo(() => {
+    return settings?.size ?? ""
+  }, [settings])
 
-    if (sizeNumber < 1 || sizeNumber > 2048)
+  const triedSize = useMemo(() => Result.runAndDoubleWrapSync(() => {
+    const string = rawSize || "128"
+    const bigint = Number(string)
+
+    if (bigint < 1 || bigint > 2048)
       throw new UIError("Size must be between 1 and 2048")
 
-    setSettings(x => ({ ...x, size: sizeString }))
+    return bigint
+  }), [rawSize])
+
+  const onSizeChange = useCallback((event: ChangeEvent<HTMLInputElement>) => Errors.runOrLogAndAlert(async () => {
+    setSettings(x => ({ ...x, size: event.target.value }))
   }), [])
 
   const onGenerateClick = useCallback(() => Errors.runOrLogAndAlert(async () => {
@@ -185,20 +200,14 @@ export function MiningDialog() {
 
       using _ = new Deferred(() => setAborter(undefined))
 
-      const minimumString = minimum
-      const minimumBigInt = BigInt(minimumString)
-
-      const sizeString = size
-      const sizeNumber = Number(sizeString)
-
-      if (mode === "stop")
-        await generateAndClaimOrThrow(sizeNumber, minimumBigInt, signal)
+      if (rawMode === "stop")
+        await generateAndClaimOrThrow(triedSize.getOrThrow(), triedMinimum.getOrThrow(), signal)
       else
-        await generateAndAsyncClaimOrLogAndAlertInLoopOrThrow(sizeNumber, minimumBigInt, signal)
+        await generateAndAsyncClaimOrLogAndAlertInLoopOrThrow(triedSize.getOrThrow(), triedMinimum.getOrThrow(), signal)
 
       //
     }
-  }), [aborter, mode, size, minimum, generateAndClaimOrThrow, generateAndAsyncClaimOrLogAndAlertInLoopOrThrow])
+  }), [aborter, rawMode, triedSize, triedMinimum, generateAndClaimOrThrow, generateAndAsyncClaimOrLogAndAlertInLoopOrThrow])
 
   return <>
     <h1 className="text-2xl font-medium">
@@ -320,7 +329,7 @@ export function MiningDialog() {
             <div className="grow" />
             <input type="checkbox"
               onChange={onModeChange}
-              checked={mode === "loop"} />
+              checked={rawMode === "loop"} />
           </label>
           <div className="h-4" />
           <div className="font-medium">
@@ -397,9 +406,16 @@ export function MiningDialog() {
             <div className="text-default-contrast">1 — +∞</div>
             <div className="grow" />
             <input type="number" className="outline-none text-end"
+              placeholder="1000000"
               onChange={onMinimumChange}
-              value={minimum} />
+              value={rawMininmum} />
           </label>
+          {triedMinimum.isErr() && <>
+            <div className="h-2" />
+            <div className="text-red-500">
+              {triedMinimum.getErr().message}
+            </div>
+          </>}
           <div className="h-4" />
           <div className="font-medium">
             {Locale.get({
@@ -475,9 +491,16 @@ export function MiningDialog() {
             <div className="text-default-contrast">1 — 2048</div>
             <div className="grow" />
             <input type="number" className="outline-none text-end"
+              placeholder="128"
               onChange={onSizeChange}
-              value={size} />
+              value={rawSize} />
           </label>
+          {triedSize.isErr() && <>
+            <div className="h-2" />
+            <div className="text-red-500">
+              {triedSize.getErr().message}
+            </div>
+          </>}
         </Dialog>}
       {hash.url.pathname === "/wallet" &&
         <Dialog>
