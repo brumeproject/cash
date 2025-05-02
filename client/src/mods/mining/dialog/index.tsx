@@ -206,7 +206,7 @@ export function MiningDialog() {
 
       using _ = new Deferred(() => setAborter(undefined))
 
-      if (rawMode === "stop")
+      if (rawMode !== "loop")
         await generateAndClaimOrThrow(triedSize.getOrThrow(), triedMinimum.getOrThrow(), signal)
       else
         await generateAndAsyncClaimOrLogAndAlertInLoopOrThrow(triedSize.getOrThrow(), triedMinimum.getOrThrow(), signal)
