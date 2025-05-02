@@ -17,10 +17,12 @@ export default async function account(
 
   const url = new URL(req.url, "http://example.com")
 
-  const address = url.searchParams.get("address")
+  const $address = url.searchParams.get("address")
 
-  if (address == null)
+  if ($address == null)
     return void res.status(400).setHeaders(headers).end()
+
+  const address = $address.toLowerCase()
 
   const { data, error } = await supabase
     .from("accounts")
