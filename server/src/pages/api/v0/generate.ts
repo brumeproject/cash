@@ -10,64 +10,147 @@ import { recoverMessageAddress } from "viem";
 create or replace function generate(
     version text,
     address text,
-    nonce numeric,
+    nonce text,
     signature text,
     receiver text,
     secrets text,
-    sparks numeric
+    sparks text
 ) returns numeric as $$
 declare
-    previous record;
-    delta numeric;
-    psparks numeric;
-    ptokens numeric;
-    bsparks numeric;
-    ssparks numeric;
-    btokens numeric;
-    stokens numeric;
-    tokens numeric;
+    _sparks numeric;
+    _tokens numeric;
+
+    _revent record;
+    _rnonce record;
+    _rbalance record;
+    _rgenerate record;
+
+    _delta numeric;
+
+    _psparks numeric;
+    _ptokens numeric;
+    _bsparks numeric;
+    _ssparks numeric;
+    _btokens numeric;
+    _stokens numeric;
+
+    _fnonce text;
+    _fbalance text;
+
+    _data jsonb;
 begin
+    _sparks := sparks::numeric;
+    
     if exists (
-        select 1 
-        from accounts 
+        select 1 from accounts 
         where accounts.address = generate.address
-        and accounts.nonce::numeric != generate.nonce
+        and accounts.nonce != generate.nonce
     ) then
         raise exception 'Invalid nonce';
     end if;
 
-    select * into previous from events where type = 'generate' order by id desc limit 1;
+    select *  into _revent from events
+    order by time desc limit 1;
 
-    delta := extract(epoch from (select current_timestamp)) - extract(epoch from (coalesce(previous.time, (select current_timestamp))));
+    select * into _rnonce from events
+    where events.data @> format('{"events": [{"type": "nonce", "address": "%s"}]}', generate.address)::jsonb
+    order by time desc limit 1;
 
-    psparks := coalesce((previous.data -> 'psparks')::numeric, 1);
-    ptokens := coalesce((previous.data -> 'ptokens')::numeric, 1);
+    select * into _rbalance from events
+    where events.data @> format('{"events": [{"type": "balance", "address": "%s"}]}', generate.receiver)::jsonb
+    order by time desc limit 1;
 
-    stokens := delta / 1000000;
-    ptokens = ptokens + stokens;
+    select * into _rgenerate from events
+    where events.data @> '{"events": [{"type": "generate"}]}'
+    order by time desc limit 1;
 
-    ssparks := least(sparks, psparks);
-    btokens := (ssparks * ptokens) / (psparks + ssparks);
+    _delta := extract(epoch from (select current_timestamp)) - extract(epoch from (coalesce(_rgenerate.time, (select current_timestamp))));
 
-    psparks = psparks + ssparks;
-    ptokens = ptokens - btokens;
+    _psparks := coalesce((jsonb_path_query_first(_rgenerate.data, '$.events[*] ? (@.type == "generate").psparks') #>> '{}')::numeric, 1);
+    _ptokens := coalesce((jsonb_path_query_first(_rgenerate.data, '$.events[*] ? (@.type == "generate").ptokens') #>> '{}')::numeric, 1);
 
-    tokens := btokens;
+    _stokens := _delta * power(10, 16);
+    _ptokens = _ptokens + _stokens;
+
+    _ssparks := least(_sparks, _psparks);
+    _btokens := floor((_ssparks * _ptokens) / (_psparks + _ssparks));
+
+    _psparks = _psparks + _ssparks;
+    _ptokens = _ptokens - _btokens;
+
+    _tokens := _btokens;
 
     insert into accounts (address, balance, nonce)
-    values (generate.receiver, to_jsonb(tokens), to_jsonb(0))
-    on conflict on constraint accounts_pkey
-    do update set balance = to_jsonb(accounts.balance::numeric + tokens);
+    values (generate.address, 0::text, 1::text)
+    on conflict on constraint accounts_pkey do update set 
+    nonce = (accounts.nonce::numeric + 1)::text;
 
     insert into accounts (address, balance, nonce)
-    values (generate.address, to_jsonb(0), to_jsonb(1))
-    on conflict on constraint accounts_pkey
-    do update set nonce = to_jsonb(accounts.nonce::numeric + 1);
+    values (generate.receiver, _tokens::text, 0::text)
+    on conflict on constraint accounts_pkey do update set
+    balance = (accounts.balance::numeric + _tokens)::text;
 
-    insert into events (type, data)
-    values ('generate', jsonb_build_object('version', generate.version, 'address', generate.address, 'nonce', generate.nonce, 'signature', generate.signature, 'receiver', generate.receiver, 'secrets', generate.secrets, 'sparks', generate.sparks, 'tokens', tokens, 'psparks', psparks, 'ptokens', ptokens));
+    select accounts.nonce into _fnonce from accounts 
+    where accounts.address = generate.address;
+
+    select accounts.balance into _fbalance from accounts 
+    where accounts.address = generate.receiver;
+
+    _data := jsonb_build_object(
+        'parent', jsonb_build_object(
+            'id', _revent.id::text,
+            'hash', _revent.hash::text
+        ),
+        'intent', jsonb_build_object(
+            'method', 'generate', 
+            'version', generate.version::text, 
+            'nonce', generate.nonce::text, 
+            'address', generate.address::text, 
+            'signature', generate.signature::text,
+            'params', jsonb_build_object(
+                'receiver', generate.receiver::text, 
+                'secrets', generate.secrets::text
+            )
+        ),
+        'events', jsonb_build_array(
+            jsonb_build_object(
+                'type', 'nonce',
+                'address', generate.address::text,
+                'value', _fnonce::text,
+                'parent', jsonb_build_object(
+                    'id', _rnonce.id::text, 
+                    'hash', _rnonce.hash::text
+                )
+            ),
+            jsonb_build_object(
+                'type', 'balance',
+                'address', generate.receiver::text,
+                'value', _fbalance::text,
+                'parent', jsonb_build_object(
+                    'id', _rbalance.id::text, 
+                    'hash', _rbalance.hash::text
+                )
+            ),
+            jsonb_build_object(
+                'type', 'generate',
+                'sender', generate.address::text,
+                'receiver', generate.receiver::text,
+                'sparks', sparks::text,
+                'tokens', _tokens::text,
+                'psparks', _psparks::text,
+                'ptokens', _ptokens::text,
+                'parent', jsonb_build_object(
+                    'id', _rgenerate.id::text, 
+                    'hash', _rgenerate.hash::text
+                )
+            )
+        )
+    );
+
+    insert into events (data, hash)
+    values (_data, hashtext(_data::text)::text);
     
-    return tokens;
+    return _tokens::text;
 end;
 $$ language plpgsql;
 */

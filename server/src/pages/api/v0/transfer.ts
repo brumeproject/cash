@@ -6,61 +6,140 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { recoverMessageAddress } from "viem";
 
 /* 
-create or replace function generate(
+create or replace function transfer(
     version text,
     address text,
-    nonce numeric,
+    nonce text,
     signature text,
     receiver text,
-    secrets text,
-    value numeric,
-    count numeric
-) returns numeric as $$
+    value text
+) returns void as $$
 declare
-    total_value numeric;
-    total_count numeric;
-    average numeric;
-    derived numeric;
+    _value numeric;
+
+    _revent record;
+    _rnonce record;
+    _rbalance0 record;
+    _rbalance1 record;
+    _rtransfer record;
+
+    _fnonce numeric;
+    _fbalance0 numeric;
+    _fbalance1 numeric;
+
+    _data jsonb;
 begin
+    _value := floor(value::numeric);
+
     if exists (
-        select 1 
-        from accounts 
-        where accounts.address = generate.address
-        and accounts.nonce::numeric != generate.nonce
+        select 1 from accounts 
+        where accounts.address = transfer.address
+        and accounts.nonce != transfer.nonce
     ) then
         raise exception 'Invalid nonce';
     end if;
 
-    total_value := coalesce((select meta.value::numeric from meta where key = 'total_value'), 0) + generate.value;
-    total_count := coalesce((select meta.value::numeric from meta where key = 'total_count'), 0) + generate.count;
+    if coalesce((select balance::numeric from accounts where accounts.address = transfer.address), 0) < _value then
+        raise exception 'Invalid balance';
+    end if;
 
-    insert into meta (key, value)
-    values ('total_value', to_jsonb(total_value))
-    on conflict on constraint meta_pkey
-    do update set value = to_jsonb(total_value);
+    select *  into _revent from events
+    order by time desc limit 1;
 
-    insert into meta (key, value)
-    values ('total_count', to_jsonb(total_count))
-    on conflict on constraint meta_pkey
-    do update set value = to_jsonb(total_count);
+    select * into _rnonce from events
+    where events.data @> format('{"events": [{"type": "nonce", "address": "%s"}]}', transfer.address)::jsonb
+    order by time desc limit 1;
 
-    average := total_value / total_count;
-    derived := generate.value / average;
+    select * into _rbalance0 from events
+    where events.data @> format('{"events": [{"type": "balance", "address": "%s"}]}', transfer.address)::jsonb
+    order by time desc limit 1;
+
+    select * into _rbalance1 from events
+    where events.data @> format('{"events": [{"type": "balance", "address": "%s"}]}', transfer.address)::jsonb
+    order by time desc limit 1;
+
+    select * into _rtransfer from events
+    where events.data @> '{"events": [{"type": "transfer"}]}'
+    order by time desc limit 1;
+
+    update accounts set 
+    nonce = (accounts.nonce::numeric + 1)::text,
+    balance = (accounts.balance::numeric - _value)::text
+    where accounts.address = transfer.address;
 
     insert into accounts (address, balance, nonce)
-    values (generate.receiver, to_jsonb(derived), to_jsonb(0))
-    on conflict on constraint accounts_pkey
-    do update set balance = to_jsonb(accounts.balance::numeric + derived);
+    values (transfer.receiver, _value::text, 0::text)
+    on conflict on constraint accounts_pkey do update set 
+    balance = (accounts.balance::numeric + _value)::text;
 
-    insert into accounts (address, balance, nonce)
-    values (generate.address, to_jsonb(0), to_jsonb(1))
-    on conflict on constraint accounts_pkey
-    do update set nonce = to_jsonb(accounts.nonce::numeric + 1);
+    select accounts.nonce::numeric into _fnonce from accounts 
+    where accounts.address = transfer.address;
 
-    insert into events (type, data)
-    values ('generate', jsonb_build_object('version', generate.version, 'address', generate.address, 'nonce', generate.nonce, 'signature', generate.signature, 'receiver', generate.receiver, 'secrets', generate.secrets, 'value', generate.value, 'count', generate.count, 'average', average, 'derived', derived));
-    
-    return derived;
+    select accounts.balance::numeric into _fbalance0 from accounts 
+    where accounts.address = transfer.address;
+
+    select accounts.balance::numeric into _fbalance1 from accounts 
+    where accounts.address = transfer.receiver;
+
+    _data := jsonb_build_object(
+        'parent', jsonb_build_object(
+            'id', _revent.id::text,
+            'hash', _revent.hash::text
+        ),
+        'intent', jsonb_build_object(
+            'method', 'transfer', 
+            'version', transfer.version::text, 
+            'nonce', transfer.nonce::text, 
+            'address', transfer.address::text, 
+            'signature', transfer.signature::text,
+            'params', jsonb_build_object(
+                'receiver', transfer.receiver::text, 
+                'value', transfer.value::text
+            )
+        ),
+        'events', jsonb_build_array(
+            jsonb_build_object(
+                'type', 'nonce',
+                'address', transfer.address::text,
+                'value', _fnonce::text,
+                'parent', jsonb_build_object(
+                    'id', _rnonce.id::text, 
+                    'hash', _rnonce.hash::text
+                )
+            ),
+            jsonb_build_object(
+                'type', 'balance',
+                'address', transfer.address::text,
+                'value', _fbalance0::text,
+                'parent', jsonb_build_object(
+                    'id', _rbalance0.id::text, 
+                    'hash', _rbalance0.hash::text
+                )
+            ),
+            jsonb_build_object(
+                'type', 'balance',
+                'address', transfer.receiver::text,
+                'value', _fbalance1::text,
+                'parent', jsonb_build_object(
+                    'id', _rbalance1.id::text, 
+                    'hash', _rbalance1.hash::text
+                )
+            ),
+            jsonb_build_object(
+                'type', 'transfer',
+                'sender', transfer.address::text,
+                'receiver', transfer.receiver::text,
+                'value', transfer.value::text,
+                'parent', jsonb_build_object(
+                    'id', _rtransfer.id::text, 
+                    'hash', _rtransfer.hash::text
+                )
+            )
+        )
+    );
+
+    insert into events (data, hash)
+    values (_data, hashtext(_data::text)::text);
 end;
 $$ language plpgsql;
 */
