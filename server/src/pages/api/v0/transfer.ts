@@ -162,10 +162,12 @@ function recoverOrThrow(message: string, signature: string) {
   using publicKeyObject = CashServerWasm.Secp256k1VerifyingKey.recover_from_prehash(concatHashMemory, signatureObject)
   using publicKeyMemory = publicKeyObject.to_sec1_uncompressed_bytes()
 
-  using publicKeyHashMemory = CashServerWasm.keccak256(publicKeyMemory)
-  const publicKeyHashBase16 = CashServerWasm.base16_encode_lower(publicKeyHashMemory)
+  using rawPublicKeyMemory = new CashServerWasm.Memory(publicKeyMemory.bytes.subarray(1))
 
-  return `0x${publicKeyHashBase16.slice(24)}`
+  using rawPublicKeyHashMemory = CashServerWasm.keccak256(rawPublicKeyMemory)
+  const rawPublicKeyHashBase16 = CashServerWasm.base16_encode_lower(rawPublicKeyHashMemory)
+
+  return `0x${rawPublicKeyHashBase16.slice(24)}`
 }
 
 export default async function generate(
