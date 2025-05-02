@@ -1,5 +1,6 @@
 // Next.js API route support: https://nextjs.org/docs/api-routes/introduction
 import { supabase } from "@/mods/supabase/mods/client";
+import { ZeroHexString } from "@hazae41/hex";
 import type { NextApiRequest, NextApiResponse } from "next";
 
 export default async function account(
@@ -20,6 +21,8 @@ export default async function account(
   const $address = url.searchParams.get("address")
 
   if ($address == null)
+    return void res.status(400).setHeaders(headers).end()
+  if (!ZeroHexString.Length.is($address, 20))
     return void res.status(400).setHeaders(headers).end()
 
   const address = $address.toLowerCase()

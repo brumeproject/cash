@@ -53,7 +53,6 @@ export function MiningDialog() {
     const versionZeroHex = `0x${versionBigInt.toString(16)}`
 
     const nonceBigInt = 0n
-    const nonceString = nonceBigInt.toString()
     const nonceZeroHex = `0x${nonceBigInt.toString(16).toLowerCase()}`
 
     const minimumBigInt = minimum
@@ -100,10 +99,11 @@ export function MiningDialog() {
 
     signal.throwIfAborted()
 
-    const nonce = nonceString
-    const receiver = target.address
+    const receiver = target.address.toLowerCase()
     const secrets = secretsZeroHex
     const data = { receiver, secrets }
+
+    const nonce = nonceBigInt.toString()
 
     const message = JSON.stringify({ version, type, nonce, data })
     const signature = await signer.signMessage({ message })

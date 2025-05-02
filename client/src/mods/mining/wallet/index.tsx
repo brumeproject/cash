@@ -7,9 +7,10 @@ import { API } from "@/mods/api";
 import { useDatabaseContext } from "@/mods/database";
 import { HashSubpathProvider, useHashSubpath, usePathContext } from "@hazae41/chemin";
 import { Fixed } from "@hazae41/fixed";
+import { ZeroHexString } from "@hazae41/hex";
 import { Option } from "@hazae41/option";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { Hex, isAddress, PrivateKeyAccount } from "viem";
+import { Hex, PrivateKeyAccount } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { Locale } from "../../locale";
 import { useLocaleContext } from "../../locale/mods/context";
@@ -138,7 +139,8 @@ export function WalletDialog() {
 
     if ($receiver == null)
       return
-    if (!isAddress($receiver))
+
+    if (!ZeroHexString.Length.is($receiver, 20))
       throw new UIError("Invalid address")
 
     const $value = prompt("Enter the amount to send")
@@ -146,13 +148,13 @@ export function WalletDialog() {
     if ($value == null)
       return
 
-    const receiver = $receiver
+    const receiver = $receiver.toLowerCase()
     const value = Fixed.fromDecimalString($value).as(18).toBigInt().toString()
+    const data = { receiver, value }
 
     const version = "422827093349"
     const type = "transfer"
     const nonce = account.nonce
-    const data = { receiver, value }
 
     const message = JSON.stringify({ version, type, nonce, data })
     const signature = await wallet.current.viemAccount.signMessage({ message })

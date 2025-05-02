@@ -1,6 +1,7 @@
 // Next.js API route support: https://nextjs.org/docs/api-routes/introduction
 import { supabase } from "@/mods/supabase/mods/client";
 import { z } from "@hazae41/gardien";
+import { ZeroHexString } from "@hazae41/hex";
 import type { NextApiRequest, NextApiResponse } from "next";
 import { recoverMessageAddress } from "viem";
 
@@ -86,13 +87,16 @@ export default async function generate(
     return void res.status(400).setHeaders(headers).end()
   if ($type !== "transfer")
     return void res.status(400).setHeaders(headers).end()
+  if (!ZeroHexString.Length.is($receiver, 20))
+    return void res.status(400).setHeaders(headers).end()
 
-  const version = $version
-  const type = $type
-  const nonce = BigInt($nonce).toString()
-  const receiver = $receiver
+  const [version, type] = [$version, $type]
+
+  const receiver = $receiver.toLowerCase()
   const value = BigInt($value).toString()
   const data = { receiver, value }
+
+  const nonce = BigInt($nonce).toString()
 
   const signature = $signature as `0x${string}`
   const message = JSON.stringify({ version, type, nonce, data })

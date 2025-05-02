@@ -2,6 +2,7 @@
 import { supabase } from "@/mods/supabase/mods/client";
 import { CashServerWasm } from "@brumewallet/cash.server.wasm";
 import { z } from "@hazae41/gardien";
+import { ZeroHexString } from "@hazae41/hex";
 import type { NextApiRequest, NextApiResponse } from "next";
 import { recoverMessageAddress } from "viem";
 
@@ -93,15 +94,20 @@ export default async function generate(
     return void res.status(400).setHeaders(headers).end()
   if ($type !== "generate")
     return void res.status(400).setHeaders(headers).end()
+  if (!ZeroHexString.Length.is($receiver, 20))
+    return void res.status(400).setHeaders(headers).end()
+  if (!ZeroHexString.is($secrets))
+    return void res.status(400).setHeaders(headers).end()
   if ($secrets.length > (2 + (64 * 2048)))
     return void res.status(400).setHeaders(headers).end()
 
-  const version = $version
-  const type = $type
-  const nonce = BigInt($nonce).toString()
-  const receiver = $receiver
-  const secrets = $secrets
+  const [version, type] = [$version, $type]
+
+  const receiver = $receiver.toLowerCase()
+  const secrets = $secrets.toLowerCase()
   const data = { receiver, secrets }
+
+  const nonce = BigInt($nonce).toString()
 
   const signature = $signature as `0x${string}`
   const message = JSON.stringify({ version, type, nonce, data })
@@ -131,12 +137,11 @@ export default async function generate(
     const valueRawHex = CashServerWasm.base16_encode_lower(valueMemory)
     const valueZeroHex = `0x${valueRawHex}`
     const valueBigInt = BigInt(valueZeroHex)
-    const valueString = valueBigInt.toString()
 
     {
       const address = signer.toLowerCase()
       const receiver = $receiver.toLowerCase()
-      const sparks = valueString
+      const sparks = valueBigInt.toString()
 
       const { data, error } = await supabase.rpc("generate", { version, address, nonce, signature, receiver, secrets, sparks })
 
