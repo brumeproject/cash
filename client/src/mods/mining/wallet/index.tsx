@@ -156,8 +156,14 @@ export function WalletDialog() {
     const type = "transfer"
     const nonce = account.nonce
 
+    function unoffset(signature: string) {
+      return signature.endsWith("1b" /*27*/)
+        ? signature.slice(0, -2) + "00" /*27->0*/
+        : signature.slice(0, -2) + "01" /*28->1*/
+    }
+
     const message = JSON.stringify({ version, type, nonce, data })
-    const signature = await wallet.current.viemAccount.signMessage({ message })
+    const signature = unoffset(await wallet.current.viemAccount.signMessage({ message }))
 
     const headers = { "Content-Type": "application/json" }
     const body = JSON.stringify({ version, type, nonce, receiver, value, signature })

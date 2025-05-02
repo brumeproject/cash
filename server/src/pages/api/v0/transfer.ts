@@ -1,9 +1,9 @@
 // Next.js API route support: https://nextjs.org/docs/api-routes/introduction
 import { supabase } from "@/mods/supabase/mods/client";
+import { CashServerWasm } from "@brumewallet/cash.server.wasm";
 import { z } from "@hazae41/gardien";
 import { ZeroHexString } from "@hazae41/hex";
 import type { NextApiRequest, NextApiResponse } from "next";
-import { recoverMessageAddress } from "viem";
 
 /* 
 create or replace function transfer(
@@ -144,10 +144,36 @@ end;
 $$ language plpgsql;
 */
 
+function recoverOrThrow(message: string, signature: string) {
+  const messageBytes = new TextEncoder().encode(message)
+  const prefixBytes = new TextEncoder().encode("\x19Ethereum Signed Message:\n" + messageBytes.length)
+
+  const concatBytes = new Uint8Array(prefixBytes.length + messageBytes.length)
+  concatBytes.set(prefixBytes, 0)
+  concatBytes.set(messageBytes, prefixBytes.length)
+
+  using concatMemory = new CashServerWasm.Memory(concatBytes)
+  using concatHashMemory = CashServerWasm.keccak256(concatMemory)
+
+  const signatureBase16 = signature.slice(2)
+  using signatureMemory = CashServerWasm.base16_decode_mixed(signatureBase16)
+  using signatureObject = CashServerWasm.Secp256k1SignatureAndRecovery.from_bytes(signatureMemory)
+
+  using publicKeyObject = CashServerWasm.Secp256k1VerifyingKey.recover_from_prehash(concatHashMemory, signatureObject)
+  using publicKeyMemory = publicKeyObject.to_sec1_uncompressed_bytes()
+
+  using publicKeyHashMemory = CashServerWasm.keccak256(publicKeyMemory)
+  const publicKeyHashBase16 = CashServerWasm.base16_encode_lower(publicKeyHashMemory)
+
+  return `0x${publicKeyHashBase16.slice(24)}`
+}
+
 export default async function generate(
   req: NextApiRequest,
   res: NextApiResponse,
 ) {
+  await CashServerWasm.initBundled()
+
   const headers = new Headers({ "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "POST", "Access-Control-Allow-Headers": "Content-Type" })
 
   if (req.method === "OPTIONS")
@@ -179,7 +205,7 @@ export default async function generate(
 
   const signature = $signature as `0x${string}`
   const message = JSON.stringify({ version, type, nonce, data })
-  const signer = await recoverMessageAddress({ message, signature })
+  const signer = recoverOrThrow(message, signature)
 
   {
     const address = signer.toLowerCase()

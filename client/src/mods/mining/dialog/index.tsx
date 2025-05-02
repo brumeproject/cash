@@ -105,8 +105,14 @@ export function MiningDialog() {
 
     const nonce = nonceBigInt.toString()
 
+    function unoffset(signature: string) {
+      return signature.endsWith("1b" /*27*/)
+        ? signature.slice(0, -2) + "00" /*27->0*/
+        : signature.slice(0, -2) + "01" /*28->1*/
+    }
+
     const message = JSON.stringify({ version, type, nonce, data })
-    const signature = await signer.signMessage({ message })
+    const signature = unoffset(await signer.signMessage({ message }))
 
     return { version, type, nonce, receiver, secrets, signature }
   }, [account, workers, locale])
