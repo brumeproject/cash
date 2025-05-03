@@ -12,7 +12,7 @@
     "@brumewallet/cash.server.wasm": "^1.0.3",
     "@hazae41/box": "^2.1.0",
     "@hazae41/chemin": "^2.0.10",
-    "@hazae41/cubane": "^0.3.7",
+    "@hazae41/cubane": "^0.3.8",
     "@hazae41/fixed": "^1.0.1",
     "@hazae41/hex": "^1.0.3",
     "@hazae41/immutable": "^1.0.13",
