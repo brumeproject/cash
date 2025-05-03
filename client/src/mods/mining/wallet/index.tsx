@@ -6,7 +6,7 @@ import { Dialog } from "@/libs/ui/dialog";
 import { API } from "@/mods/api";
 import { useDatabaseContext } from "@/mods/database";
 import { HashSubpathProvider, useHashSubpath, usePathContext } from "@hazae41/chemin";
-import { Address, ExtSigningKey, SigningKey, ZeroHexSignature, ZeroHexSigningKey } from "@hazae41/cubane";
+import { ExtSigningKey, ZeroHexSignature, ZeroHexSigner, ZeroHexSigningKey } from "@hazae41/cubane";
 import { Fixed } from "@hazae41/fixed";
 import { ZeroHexString } from "@hazae41/hex";
 import { Option } from "@hazae41/option";
@@ -14,15 +14,10 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { Locale } from "../../locale";
 import { useLocaleContext } from "../../locale/mods/context";
 
-export interface WalletInfo {
-  readonly address: Address
-  readonly privateKey: ZeroHexSigningKey
-}
-
 export interface WalletHandle {
-  readonly current: WalletInfo
+  readonly current: ZeroHexSigner
 
-  setOrThrow(privateKey: ZeroHexSigningKey): Promise<void>
+  setOrThrow(signer: ZeroHexSigner): Promise<void>
 }
 
 export const WalletContext = createContext<Nullable<WalletHandle>>(undefined)
@@ -35,27 +30,25 @@ export function WalletProvider(props: ChildrenProps) {
   const { children } = props
   const database = useDatabaseContext().getOrThrow()
 
-  const [current, setCurrent] = useState<WalletInfo>()
+  const [current, setCurrent] = useState<ZeroHexSigner>()
 
   const getAndSetAccountOrLogAndAlert = useCallback(() => Errors.runOrLogAndAlert(async () => {
-    const stalePrivateKeyZeroHex = await database.getOrThrow<ZeroHexSigningKey>("account")
+    const stale = await database.getOrThrow<ZeroHexSigningKey>("account")
 
-    if (stalePrivateKeyZeroHex != null) {
-      const privateKey = stalePrivateKeyZeroHex
-      const address = ExtSigningKey.getAddressOrThrow(privateKey)
+    if (stale != null) {
+      const signer = ZeroHexSigner.fromOrThrow(stale)
 
-      return void setCurrent({ address, privateKey })
+      setCurrent(signer)
+
+      return
     }
 
-    const freshPrivateKeyExt = ExtSigningKey.randomOrThrow()
-    const freshPrivateKeyZeroHex = ZeroHexSigningKey.fromExtOrThrow(freshPrivateKeyExt)
+    const fresh = ExtSigningKey.randomOrThrow()
+    const signer = ZeroHexSigner.fromOrThrow(fresh)
 
-    const privateKey = freshPrivateKeyZeroHex
-    const address = ExtSigningKey.getAddressOrThrow(privateKey)
+    await database.setOrThrow("account", signer.signingKey)
 
-    await database.setOrThrow("account", privateKey)
-
-    setCurrent({ address, privateKey })
+    setCurrent(signer)
   }), [database])
 
   useEffect(() => {
@@ -64,15 +57,13 @@ export function WalletProvider(props: ChildrenProps) {
     getAndSetAccountOrLogAndAlert()
   }, [database, getAndSetAccountOrLogAndAlert])
 
-  const setOrThrow = useCallback(async (privateKey: ZeroHexSigningKey) => {
+  const setOrThrow = useCallback(async (signer: ZeroHexSigner) => {
     if (database == null)
       return
 
-    const address = ExtSigningKey.getAddressOrThrow(privateKey)
+    await database.setOrThrow("account", signer.signingKey)
 
-    await database.setOrThrow("account", privateKey)
-
-    setCurrent({ address, privateKey })
+    setCurrent(signer)
   }, [database])
 
   const handle = useMemo(() => {
@@ -103,7 +94,7 @@ export function WalletDialog() {
   }), [])
 
   const onGenerateClick = useCallback(() => Errors.runOrLogAndAlert(async () => {
-    await wallet.setOrThrow(ZeroHexSigningKey.fromExtOrThrow(ExtSigningKey.randomOrThrow()))
+    await wallet.setOrThrow(ZeroHexSigner.fromOrThrow(ExtSigningKey.randomOrThrow()))
   }), [wallet])
 
   const onImportClick = useCallback(() => Errors.runOrLogAndAlert(async () => {
@@ -115,7 +106,7 @@ export function WalletDialog() {
     if (!ZeroHexString.Length.is(privateKey, 32))
       throw new UIError("Invalid private key")
 
-    await wallet.setOrThrow(privateKey)
+    await wallet.setOrThrow(ZeroHexSigner.fromOrThrow(privateKey))
   }), [wallet])
 
   const [account, setAccount] = useState<{ balance: string, nonce: string }>()
@@ -159,7 +150,7 @@ export function WalletDialog() {
     const nonce = account.nonce
 
     const message = JSON.stringify({ version, type, nonce, data })
-    const signature = ZeroHexSignature.fromExtOrThrow(SigningKey.signMessageNoOffsetOrThrow(wallet.current.privateKey, message))
+    const signature = ZeroHexSignature.fromExtOrThrow(wallet.current.signMessageNoOffsetOrThrow(message))
 
     const headers = { "Content-Type": "application/json" }
     const body = JSON.stringify({ version, type, nonce, receiver, value, signature })
@@ -237,8 +228,8 @@ export function WalletDialog() {
       onClick={onRevealClick}>
       <div className="block w-full overflow-hidden whitespace-nowrap text-ellipsis">
         {reveal === true
-          ? wallet.current.privateKey
-          : "•".repeat(wallet.current.privateKey.length)}
+          ? wallet.current.signingKey
+          : "•".repeat(wallet.current.signingKey.length)}
       </div>
     </div>
     <div className="h-2" />

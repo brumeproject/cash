@@ -9,7 +9,7 @@ import { Locale } from "@/mods/locale";
 import { useLocaleContext } from "@/mods/locale/mods/context";
 import { AsyncStack, Deferred } from "@hazae41/box";
 import { HashSubpathProvider, useCoords, useHashSubpath, usePathContext } from "@hazae41/chemin";
-import { SigningKey, ZeroHexSignature } from "@hazae41/cubane";
+import { ExtSigner, ZeroHexSignature } from "@hazae41/cubane";
 import { Fixed } from "@hazae41/fixed";
 import { NetMixin } from "@hazae41/networker";
 import { Result } from "@hazae41/result";
@@ -41,11 +41,12 @@ export function MiningDialog() {
   const $settings = useCoords(hash, "/settings")
 
   const generateOrThrow = useCallback(async (size: number, minimum: bigint, signal: AbortSignal) => {
+    using signer = ExtSigner.randomOrThrow()
+
     const type = "generate"
     const version = "422827093349"
 
-    const privateKeyExt = SigningKey.randomOrThrow()
-    const addressZeroHex = SigningKey.getUncheckedAddressOrThrow(privateKeyExt).toLowerCase()
+    const addressZeroHex = signer.address.toLowerCase()
 
     const versionBigInt = BigInt(version)
     const versionZeroHex = `0x${versionBigInt.toString(16)}`
@@ -104,7 +105,7 @@ export function MiningDialog() {
     const nonce = nonceBigInt.toString()
 
     const message = JSON.stringify({ version, type, nonce, data })
-    const signature = ZeroHexSignature.fromExtOrThrow(SigningKey.signMessageNoOffsetOrThrow(privateKeyExt, message))
+    const signature = ZeroHexSignature.fromExtOrThrow(signer.signMessageNoOffsetOrThrow(message))
 
     return { version, type, nonce, receiver, secrets, signature }
   }, [wallet, workers, locale])
