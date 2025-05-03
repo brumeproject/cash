@@ -150,7 +150,9 @@ export function WalletDialog() {
     const nonce = account.nonce
 
     const message = JSON.stringify({ version, type, nonce, data })
-    const signature = ZeroHexSignature.fromExtOrThrow(wallet.current.signMessageNoOffsetOrThrow(message))
+
+    using wsignature = wallet.current.signMessageNoOffsetOrThrow(message)
+    const signature = ZeroHexSignature.fromExtOrThrow(wsignature)
 
     const headers = { "Content-Type": "application/json" }
     const body = JSON.stringify({ version, type, nonce, receiver, value, signature })

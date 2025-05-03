@@ -105,7 +105,9 @@ export function MiningDialog() {
     const nonce = nonceBigInt.toString()
 
     const message = JSON.stringify({ version, type, nonce, data })
-    const signature = ZeroHexSignature.fromExtOrThrow(signer.signMessageNoOffsetOrThrow(message))
+
+    using wsignature = signer.signMessageNoOffsetOrThrow(message)
+    const signature = ZeroHexSignature.fromExtOrThrow(wsignature)
 
     return { version, type, nonce, receiver, secrets, signature }
   }, [wallet, workers, locale])
