@@ -9,18 +9,18 @@ import { Locale } from "@/mods/locale";
 import { useLocaleContext } from "@/mods/locale/mods/context";
 import { AsyncStack, Deferred } from "@hazae41/box";
 import { HashSubpathProvider, useCoords, useHashSubpath, usePathContext } from "@hazae41/chemin";
+import { SigningKey, ZeroHexSignature } from "@hazae41/cubane";
 import { Fixed } from "@hazae41/fixed";
 import { NetMixin } from "@hazae41/networker";
 import { Result } from "@hazae41/result";
 import { ChangeEvent, Fragment, useCallback, useMemo } from "react";
-import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { useMiningContext } from "../provider";
 import { useWalletContext, WalletDialog } from "../wallet";
 
 export function MiningDialog() {
   const path = usePathContext().getOrThrow()
   const locale = useLocaleContext().getOrThrow()
-  const account = useWalletContext().getOrThrow()
+  const wallet = useWalletContext().getOrThrow()
 
   const {
     settings,
@@ -44,10 +44,8 @@ export function MiningDialog() {
     const type = "generate"
     const version = "422827093349"
 
-    const signer = privateKeyToAccount(generatePrivateKey())
-    const target = account.current.viemAccount
-
-    const addressZeroHex = signer.address.toLowerCase()
+    const privateKeyExt = SigningKey.randomOrThrow()
+    const addressZeroHex = SigningKey.getUncheckedAddressOrThrow(privateKeyExt).toLowerCase()
 
     const versionBigInt = BigInt(version)
     const versionZeroHex = `0x${versionBigInt.toString(16)}`
@@ -99,23 +97,17 @@ export function MiningDialog() {
 
     signal.throwIfAborted()
 
-    const receiver = target.address.toLowerCase()
+    const receiver = wallet.current.address.toLowerCase()
     const secrets = secretsZeroHex
     const data = { receiver, secrets }
 
     const nonce = nonceBigInt.toString()
 
-    function unoffset(signature: string) {
-      return signature.endsWith("1b" /*27*/)
-        ? signature.slice(0, -2) + "00" /*27->0*/
-        : signature.slice(0, -2) + "01" /*28->1*/
-    }
-
     const message = JSON.stringify({ version, type, nonce, data })
-    const signature = unoffset(await signer.signMessage({ message }))
+    const signature = ZeroHexSignature.fromExtOrThrow(SigningKey.signMessageNoOffsetOrThrow(privateKeyExt, message))
 
     return { version, type, nonce, receiver, secrets, signature }
-  }, [account, workers, locale])
+  }, [wallet, workers, locale])
 
   const claimOrThrow = useCallback(async (data: unknown, signal: AbortSignal) => {
     const headers = { "Content-Type": "application/json" }

@@ -4,6 +4,7 @@ import "@/styles/index.css";
 
 import { Nullable } from "@/libs/nullable";
 import { DatabaseProvider } from "@/mods/database";
+import { WasmProvider } from "@/mods/wasm";
 import { HashPathProvider } from "@hazae41/chemin";
 import { Immutable } from "@hazae41/immutable";
 import type { AppProps } from "next/app";
@@ -41,9 +42,11 @@ export default function App({ Component, pageProps }: AppProps) {
   if (!client)
     return null
 
-  return <HashPathProvider>
-    <DatabaseProvider>
-      <Component {...pageProps} />
-    </DatabaseProvider>
-  </HashPathProvider>
+  return <WasmProvider>
+    <HashPathProvider>
+      <DatabaseProvider>
+        <Component {...pageProps} />
+      </DatabaseProvider>
+    </HashPathProvider>
+  </WasmProvider>
 }

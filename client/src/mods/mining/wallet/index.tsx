@@ -6,25 +6,23 @@ import { Dialog } from "@/libs/ui/dialog";
 import { API } from "@/mods/api";
 import { useDatabaseContext } from "@/mods/database";
 import { HashSubpathProvider, useHashSubpath, usePathContext } from "@hazae41/chemin";
+import { Address, ExtSigningKey, SigningKey, ZeroHexSignature, ZeroHexSigningKey } from "@hazae41/cubane";
 import { Fixed } from "@hazae41/fixed";
 import { ZeroHexString } from "@hazae41/hex";
 import { Option } from "@hazae41/option";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { Hex, PrivateKeyAccount } from "viem";
-import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { Locale } from "../../locale";
 import { useLocaleContext } from "../../locale/mods/context";
 
 export interface WalletInfo {
-  readonly privateKey: Hex
-
-  readonly viemAccount: PrivateKeyAccount
+  readonly address: Address
+  readonly privateKey: ZeroHexSigningKey
 }
 
 export interface WalletHandle {
   readonly current: WalletInfo
 
-  setOrThrow(privateKey: Hex): Promise<void>
+  setOrThrow(privateKey: ZeroHexSigningKey): Promise<void>
 }
 
 export const WalletContext = createContext<Nullable<WalletHandle>>(undefined)
@@ -40,23 +38,24 @@ export function WalletProvider(props: ChildrenProps) {
   const [current, setCurrent] = useState<WalletInfo>()
 
   const getAndSetAccountOrLogAndAlert = useCallback(() => Errors.runOrLogAndAlert(async () => {
-    const stalePrivateKey = await database.getOrThrow<Hex>("account")
+    const stalePrivateKeyZeroHex = await database.getOrThrow<ZeroHexSigningKey>("account")
 
-    if (stalePrivateKey != null) {
-      const viemAccount = privateKeyToAccount(stalePrivateKey)
-      const privateKey = stalePrivateKey
+    if (stalePrivateKeyZeroHex != null) {
+      const privateKey = stalePrivateKeyZeroHex
+      const address = ExtSigningKey.getAddressOrThrow(privateKey)
 
-      return void setCurrent({ viemAccount, privateKey })
+      return void setCurrent({ address, privateKey })
     }
 
-    const freshPrivateKey = generatePrivateKey()
+    const freshPrivateKeyExt = ExtSigningKey.randomOrThrow()
+    const freshPrivateKeyZeroHex = ZeroHexSigningKey.fromExtOrThrow(freshPrivateKeyExt)
 
-    await database.setOrThrow("account", freshPrivateKey)
+    const privateKey = freshPrivateKeyZeroHex
+    const address = ExtSigningKey.getAddressOrThrow(privateKey)
 
-    const privateKey = freshPrivateKey
-    const viemAccount = privateKeyToAccount(privateKey)
+    await database.setOrThrow("account", privateKey)
 
-    setCurrent({ viemAccount, privateKey })
+    setCurrent({ address, privateKey })
   }), [database])
 
   useEffect(() => {
@@ -65,15 +64,15 @@ export function WalletProvider(props: ChildrenProps) {
     getAndSetAccountOrLogAndAlert()
   }, [database, getAndSetAccountOrLogAndAlert])
 
-  const setOrThrow = useCallback(async (privateKey: Hex) => {
+  const setOrThrow = useCallback(async (privateKey: ZeroHexSigningKey) => {
     if (database == null)
       return
 
-    const viemAccount = privateKeyToAccount(privateKey)
+    const address = ExtSigningKey.getAddressOrThrow(privateKey)
 
     await database.setOrThrow("account", privateKey)
 
-    setCurrent({ viemAccount, privateKey })
+    setCurrent({ address, privateKey })
   }, [database])
 
   const handle = useMemo(() => {
@@ -104,7 +103,7 @@ export function WalletDialog() {
   }), [])
 
   const onGenerateClick = useCallback(() => Errors.runOrLogAndAlert(async () => {
-    await wallet.setOrThrow(generatePrivateKey())
+    await wallet.setOrThrow(ZeroHexSigningKey.fromExtOrThrow(ExtSigningKey.randomOrThrow()))
   }), [wallet])
 
   const onImportClick = useCallback(() => Errors.runOrLogAndAlert(async () => {
@@ -113,13 +112,16 @@ export function WalletDialog() {
     if (privateKey == null)
       return
 
-    await wallet.setOrThrow(privateKey as Hex)
+    if (!ZeroHexString.Length.is(privateKey, 32))
+      throw new UIError("Invalid private key")
+
+    await wallet.setOrThrow(privateKey)
   }), [wallet])
 
   const [account, setAccount] = useState<{ balance: string, nonce: string }>()
 
   const getAndSetAccountOrLogAndAlert = useCallback(() => Errors.runOrLogAndAlert(async () => {
-    const response = await fetch(new URL(`/api/v0/account?address=${wallet.current.viemAccount.address.toLowerCase()}`, API))
+    const response = await fetch(new URL(`/api/v0/account?address=${wallet.current.address.toLowerCase()}`, API))
 
     if (!response.ok)
       throw new Error("Failed to fetch balance")
@@ -156,14 +158,8 @@ export function WalletDialog() {
     const type = "transfer"
     const nonce = account.nonce
 
-    function unoffset(signature: string) {
-      return signature.endsWith("1b" /*27*/)
-        ? signature.slice(0, -2) + "00" /*27->0*/
-        : signature.slice(0, -2) + "01" /*28->1*/
-    }
-
     const message = JSON.stringify({ version, type, nonce, data })
-    const signature = unoffset(await wallet.current.viemAccount.signMessage({ message }))
+    const signature = ZeroHexSignature.fromExtOrThrow(SigningKey.signMessageNoOffsetOrThrow(wallet.current.privateKey, message))
 
     const headers = { "Content-Type": "application/json" }
     const body = JSON.stringify({ version, type, nonce, receiver, value, signature })
@@ -229,7 +225,7 @@ export function WalletDialog() {
     <div className="h-2" />
     <div className="flex items-center border border-default-contrast rounded-xl po-2 gap-2">
       <div className="block w-full overflow-hidden whitespace-nowrap text-ellipsis">
-        {wallet.current.viemAccount.address}
+        {wallet.current.address}
       </div>
     </div>
     <div className="h-4" />

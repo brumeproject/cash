@@ -9,9 +9,10 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@brumewallet/cash.server.wasm": "^1.0.3",
     "@hazae41/box": "^2.1.0",
     "@hazae41/chemin": "^2.0.10",
-    "@hazae41/cubane": "^0.3.6",
+    "@hazae41/cubane": "^0.3.7",
     "@hazae41/fixed": "^1.0.1",
     "@hazae41/hex": "^1.0.3",
     "@hazae41/immutable": "^1.0.13",
@@ -22,14 +23,14 @@
     "@hazae41/piscine": "^3.0.0",
     "@hazae41/react-close-context": "^1.0.2",
     "@hazae41/result": "^1.3.2",
+    "@hazae41/secp256k1": "^1.0.3",
     "@hazae41/serac": "^1.0.6",
     "@hazae41/signals": "^1.0.3",
     "@hazae41/symbol-dispose-polyfill": "^1.0.2",
     "@heroicons/react": "^2.2.0",
     "next": "15.1.6",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "viem": "^2.23.12"
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
